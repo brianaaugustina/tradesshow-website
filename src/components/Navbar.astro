@@ -1,0 +1,186 @@
+---
+
+---
+
+<nav id="main-nav" class="fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="#top" class="block">
+      <img
+        src="/images/wordmark-white.svg"
+        alt="The Trades Show"
+        class="h-7 md:h-7"
+      />
+    </a>
+
+    <!-- Desktop nav -->
+    <div class="hidden md:flex items-center gap-8">
+      <a
+        href="https://artisancorral.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-sm font-normal text-white hover:text-text-light transition-colors inline-flex items-center gap-1"
+      >
+        Artisan Jobs
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </a>
+      <a
+        href="#top"
+        class="text-sm font-normal text-white hover:text-text-light transition-colors"
+      >
+        Home
+      </a>
+    </div>
+
+    <!-- Mobile hamburger / close button -->
+    <button
+      id="mobile-menu-btn"
+      class="md:hidden text-white p-2 relative z-[60]"
+      aria-label="Open menu"
+    >
+      <svg id="hamburger-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+      <svg id="close-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- Full-screen mobile drawer overlay -->
+<div id="mobile-drawer" class="fixed inset-0 z-[55] md:hidden" style="pointer-events: none; visibility: hidden;">
+  <!-- Backdrop -->
+  <div id="drawer-backdrop" class="absolute inset-0 transition-all duration-300" style="background: rgba(0,0,0,0);"></div>
+  <!-- Drawer panel -->
+  <div id="drawer-panel" class="absolute inset-0 bg-[#292725] flex flex-col transition-all duration-300" style="opacity: 0; transform: translateY(-8px);">
+    <!-- Top bar with logo + close -->
+    <div class="max-w-7xl w-full mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="#top" class="block">
+        <img
+          src="/images/wordmark-white.svg"
+          alt="The Trades Show"
+          class="h-7"
+        />
+      </a>
+      <button id="drawer-close-btn" class="text-white p-2" aria-label="Close menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <!-- Links -->
+    <div class="flex-1 flex flex-col px-8 pt-4 gap-1">
+      <a
+        href="https://artisancorral.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="drawer-link py-4 text-2xl font-bold text-white inline-flex items-center gap-2"
+      >
+        Artisan Jobs
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+      </a>
+      <a
+        href="#top"
+        class="drawer-link block py-4 text-2xl font-bold text-white"
+      >
+        Home
+      </a>
+      <hr class="border-white/10 my-4" />
+      <a
+        href="https://open.spotify.com/show/0g5nz0QQY4lNTi7qhfjBoj"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="drawer-link py-4 text-lg text-white/80 hover:text-white transition-colors inline-flex items-center gap-3"
+      >
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+        </svg>
+        Listen on Spotify
+      </a>
+      <a
+        href="https://www.youtube.com/@tradesshow"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="drawer-link py-4 text-lg text-white/80 hover:text-white transition-colors inline-flex items-center gap-3"
+      >
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+        Watch on YouTube
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const nav = document.getElementById("main-nav");
+  const btn = document.getElementById("mobile-menu-btn");
+  const drawer = document.getElementById("mobile-drawer");
+  const backdrop = document.getElementById("drawer-backdrop");
+  const panel = document.getElementById("drawer-panel");
+  const hamburgerIcon = document.getElementById("hamburger-icon");
+  const closeIcon = document.getElementById("close-icon");
+  const drawerCloseBtn = document.getElementById("drawer-close-btn");
+  let menuOpen = false;
+
+  function updateNav() {
+    if (!nav) return;
+    const scrollY = window.scrollY;
+    const heroHeight = window.innerHeight * 0.85;
+    if (scrollY > heroHeight || menuOpen) {
+      nav.style.backgroundColor = "#292725";
+    } else {
+      nav.style.backgroundColor = "transparent";
+    }
+  }
+  window.addEventListener("scroll", updateNav, { passive: true });
+  updateNav();
+
+  function openDrawer() {
+    menuOpen = true;
+    if (drawer) {
+      drawer.style.pointerEvents = "auto";
+      drawer.style.visibility = "visible";
+    }
+    if (backdrop) backdrop.style.background = "rgba(0,0,0,0.6)";
+    if (panel) {
+      panel.style.opacity = "1";
+      panel.style.transform = "translateY(0)";
+    }
+    if (hamburgerIcon) hamburgerIcon.classList.add("hidden");
+    if (closeIcon) closeIcon.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    updateNav();
+  }
+
+  function closeDrawer() {
+    menuOpen = false;
+    if (backdrop) backdrop.style.background = "rgba(0,0,0,0)";
+    if (panel) {
+      panel.style.opacity = "0";
+      panel.style.transform = "translateY(-8px)";
+    }
+    if (hamburgerIcon) hamburgerIcon.classList.remove("hidden");
+    if (closeIcon) closeIcon.classList.add("hidden");
+    document.body.style.overflow = "";
+    setTimeout(() => {
+      if (drawer && !menuOpen) {
+        drawer.style.pointerEvents = "none";
+        drawer.style.visibility = "hidden";
+      }
+    }, 300);
+    updateNav();
+  }
+
+  btn?.addEventListener("click", () => {
+    if (menuOpen) closeDrawer();
+    else openDrawer();
+  });
+
+  drawerCloseBtn?.addEventListener("click", closeDrawer);
+  backdrop?.addEventListener("click", closeDrawer);
+
+  drawer?.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", closeDrawer);
+  });
+</script>

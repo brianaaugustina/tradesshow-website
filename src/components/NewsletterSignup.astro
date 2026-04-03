@@ -1,0 +1,100 @@
+---
+interface Props {
+  variant?: "section" | "footer";
+}
+
+const { variant = "section" } = Astro.props;
+const isSection = variant === "section";
+---
+
+{isSection ? (
+  <section class="bg-charcoal py-20 md:py-28">
+    <div class="max-w-6xl mx-auto px-6 fade-in">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="font-extrabold text-2xl text-white mb-4 leading-tight">
+            From the workshop to your inbox.
+          </h2>
+          <p class="text-text-light text-base leading-relaxed">
+            New episodes, behind-the-scenes stories, and updates from the front lines of the artisan trades revival. One email a month. No noise.
+          </p>
+        </div>
+        <div>
+          <form class="newsletter-form flex flex-col sm:flex-row gap-3" data-form-id="section">
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              required
+              class="flex-1 px-5 py-3.5 rounded-full bg-white text-black text-sm placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red"
+            />
+            <button
+              type="submit"
+              class="bg-white text-black font-bold text-sm uppercase tracking-wider px-8 py-3.5 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              Submit
+            </button>
+          </form>
+          <p class="newsletter-message mt-3 text-sm hidden"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+) : (
+  <form class="newsletter-form flex flex-col sm:flex-row gap-3" data-form-id="footer">
+    <input
+      type="email"
+      name="email"
+      placeholder="Email Address"
+      required
+      class="flex-1 px-5 py-3 rounded-full bg-white text-black text-sm placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red"
+    />
+    <button
+      type="submit"
+      class="bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-full hover:bg-gray-100 transition-colors"
+    >
+      Submit
+    </button>
+  </form>
+)}
+
+<script>
+  document.querySelectorAll(".newsletter-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formEl = e.target as HTMLFormElement;
+      const email = new FormData(formEl).get("email") as string;
+      const msgEl = formEl.nextElementSibling as HTMLElement | null;
+      const btn = formEl.querySelector("button") as HTMLButtonElement;
+
+      btn.textContent = "...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        if (res.ok) {
+          if (msgEl) {
+            msgEl.textContent = "You're in! 🎉";
+            msgEl.className = "newsletter-message mt-3 text-sm text-green-400";
+          }
+          formEl.reset();
+        } else {
+          throw new Error("Failed");
+        }
+      } catch {
+        if (msgEl) {
+          msgEl.textContent = "Something went wrong. Try again.";
+          msgEl.className = "newsletter-message mt-3 text-sm text-red";
+        }
+      } finally {
+        btn.textContent = "Submit";
+        btn.disabled = false;
+      }
+    });
+  });
+</script>

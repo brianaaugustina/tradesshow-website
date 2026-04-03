@@ -1,0 +1,29 @@
+[
+  {
+    "name": "The Corral",
+    "tagline": "The first AI-powered jobs board for the artisan trades.",
+    "cta": "Enter The Corral",
+    "url": "https://artisancorral.com",
+    "image": "/images/ecosystem/the-corral.png",
+    "logo": "/images/ecosystem/logo-corral.svg",
+    "disabled": false
+  },
+  {
+    "name": "The Trades Show",
+    "tagline": "An interview series on location with modern artisans.",
+    "cta": "Watch the Show",
+    "url": "https://www.youtube.com/@tradesshow",
+    "image": "/images/ecosystem/the-show.png",
+    "logo": "/images/ecosystem/logo-show.svg",
+    "disabled": false
+  },
+  {
+    "name": "The Artisan Mag",
+    "tagline": "A print magazine designed with the same craftsmanship as the artisans that inspired it.",
+    "cta": "Coming Soon",
+    "url": "#",
+    "image": "/images/ecosystem/the-mag.png",
+    "logo": "/images/ecosystem/logo-mag.svg",
+    "disabled": true
+  }
+]

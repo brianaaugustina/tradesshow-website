@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
+
+@font-face {
+  font-family: "Trades Show Round";
+  src: url("/fonts/TradesShowRound-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-display: "Trades Show Round", cursive;
+  --font-sans: "Inter", sans-serif;
+
+  --color-black: #1a1a1a;
+  --color-charcoal: #292725;
+  --color-dark-olive: #292725;
+  --color-cream: #faf6f1;
+  --color-card-beige: #f5efe6;
+  --color-white: #ffffff;
+  --color-red: #e63946;
+  --color-text-light: #d4d0cb;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-black);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .fade-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

@@ -1,0 +1,35 @@
+---
+import InstagramFeed from "./InstagramFeed.astro";
+---
+
+<section class="bg-white py-20 md:py-28">
+  <div class="max-w-6xl mx-auto px-6 fade-in">
+    <!-- Header row -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
+      <h2 class="font-extrabold text-2xl text-left md:text-center order-first md:order-none">
+        The work, up close
+      </h2>
+      <div class="flex items-center gap-3">
+        <a
+          href="https://tiktok.com/@tradesshow"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-[#292725] transition-colors"
+        >
+          Follow on TikTok
+        </a>
+        <a
+          href="https://www.instagram.com/brianaaugustina"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 border border-black text-black font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black hover:text-white transition-colors"
+        >
+          Follow on Instagram
+        </a>
+      </div>
+    </div>
+
+    <!-- Behold Instagram feed widget -->
+    <InstagramFeed />
+  </div>
+</section>

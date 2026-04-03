@@ -1,0 +1,72 @@
+---
+import ecosystem from "../data/ecosystem.json";
+---
+
+<section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14 overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6 fade-in">
+    <h2 class="font-extrabold text-2xl mb-4 text-left">More than a show</h2>
+    <p class="text-base md:text-lg text-black/70 mb-12 max-w-2xl leading-relaxed text-left">
+      <em>The Trades Show</em> is one piece of a larger effort to revive, sustain, and grow the artisan trades. Here's what we're building:
+    </p>
+  </div>
+
+  <!-- Full-bleed right carousel: starts at content margin, extends to right edge -->
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="overflow-x-auto scrollbar-hide -mr-[calc((100vw-100%)/2+1.5rem)] pr-6">
+      <div class="flex gap-6" style="min-width: max-content;">
+        {ecosystem.map((card) => (
+          <div class="relative flex flex-col flex-shrink-0 w-[340px] md:w-[380px] h-[460px] rounded-2xl overflow-hidden group">
+            <img
+              src={card.image}
+              alt={card.name}
+              class="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10"></div>
+            <!-- Logo at top -->
+            {card.logo && (
+              <div class="relative z-10 px-8 pt-8">
+                <img
+                  src={card.logo}
+                  alt={card.name}
+                  class="w-full object-contain object-left"
+                  loading="lazy"
+                />
+              </div>
+            )}
+            <div class="relative z-10 flex flex-col justify-end flex-1 p-8">
+              {!card.logo && (
+                <h3 class="font-extrabold text-2xl text-white mb-2">{card.name}</h3>
+              )}
+              <p class="text-text-light text-sm mb-6 leading-relaxed">{card.tagline}</p>
+              {card.disabled ? (
+                <span class="inline-block bg-white/20 text-white/60 font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full text-center cursor-not-allowed">
+                  {card.cta}
+                </span>
+              ) : (
+                <a
+                  href={card.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-block bg-white text-black font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full text-center hover:bg-gray-100 transition-colors"
+                >
+                  {card.cta}
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+</style>
