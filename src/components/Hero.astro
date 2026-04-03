@@ -2,15 +2,17 @@
 
 ---
 
-<section id="top" class="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-  <!-- Video background -->
+<section id="top" class="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden bg-black">
+  <!-- Video background: starts hidden, fades in once playing -->
   <video
+    id="hero-video"
     autoplay
     muted
     loop
     playsinline
     preload="auto"
     class="absolute inset-0 w-full h-full object-cover"
+    style="opacity: 0; transition: opacity 1s ease;"
   >
     <source src="/video/hero-loop.mp4" type="video/mp4" />
   </video>
@@ -52,6 +54,15 @@
       </a>
     </div>
   </div>
+
+  <script>
+    const video = document.getElementById("hero-video") as HTMLVideoElement;
+    if (video) {
+      const show = () => { video.style.opacity = "1"; };
+      if (video.readyState >= 3) show();
+      else video.addEventListener("canplay", show, { once: true });
+    }
+  </script>
 
   <!-- Scroll indicator -->
   <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
