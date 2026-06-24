@@ -19,8 +19,8 @@ const episodes = await fetchEpisodes(5);
     <!-- Divider -->
     <hr class="border-white/10 mb-0" />
 
-    <!-- Episode list -->
-    <div class="mb-12">
+    <!-- Episode list (server-rendered at build, refreshed live on load) -->
+    <div class="mb-12" id="episode-list">
       {episodes.length > 0 ? (
         episodes.map((ep, i) => (
           <EpisodeRow
@@ -37,59 +37,183 @@ const episodes = await fetchEpisodes(5);
       )}
     </div>
 
-    <!-- Episode expand/collapse script -->
+    <!-- Episode expand/collapse + live RSS refresh script -->
     <script>
-      document.querySelectorAll(".episode-toggle").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          // Don't toggle if clicking a link
-          if ((e.target as HTMLElement).closest("a")) return;
+      const RSS_URL = "https://anchor.fm/s/1058aec28/podcast/rss";
+      const SHOW_URL = "https://open.spotify.com/show/0g5nz0QQY4lNTi7qhfjBoj";
+      const EPISODE_LIMIT = 5;
+      const SPOTIFY_PATH =
+        "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z";
 
-          const row = btn.closest(".episode-row") as HTMLElement;
-          if (!row) return;
-          const isExpanded = row.dataset.expanded === "true";
+      // --- toggle behavior (re-bindable after live re-render) ---
+      function bindEpisodeToggles() {
+        document.querySelectorAll(".episode-toggle").forEach((btn) => {
+          if ((btn as HTMLElement).dataset.bound === "true") return;
+          (btn as HTMLElement).dataset.bound = "true";
+          btn.addEventListener("click", (e) => {
+            if ((e.target as HTMLElement).closest("a")) return;
+            const row = btn.closest(".episode-row") as HTMLElement;
+            if (!row) return;
+            const isExpanded = row.dataset.expanded === "true";
+            const imageWrapper = row.querySelector(".episode-image-wrapper") as HTMLElement;
+            const desc = row.querySelector(".episode-desc") as HTMLElement;
+            const titleEl = row.querySelector(".episode-title") as HTMLElement;
+            const listenBtn = row.querySelector(".episode-listen-btn") as HTMLElement;
+            const mobileImage = row.querySelector(".episode-mobile-image") as HTMLElement;
 
-          // Desktop elements
-          const imageWrapper = row.querySelector(".episode-image-wrapper") as HTMLElement;
-          const desc = row.querySelector(".episode-desc") as HTMLElement;
-          const titleEl = row.querySelector(".episode-title") as HTMLElement;
-          const listenBtn = row.querySelector(".episode-listen-btn") as HTMLElement;
-
-          // Mobile elements
-          const mobileImage = row.querySelector(".episode-mobile-image") as HTMLElement;
-
-          if (isExpanded) {
-            // Collapse
-            row.dataset.expanded = "false";
-            btn.setAttribute("aria-expanded", "false");
-            if (imageWrapper) imageWrapper.style.height = "60px";
-            if (titleEl) {
-              titleEl.classList.remove("episode-title-expanded");
-              titleEl.classList.add("episode-title-collapsed");
+            if (isExpanded) {
+              row.dataset.expanded = "false";
+              btn.setAttribute("aria-expanded", "false");
+              if (imageWrapper) imageWrapper.style.height = "60px";
+              if (titleEl) {
+                titleEl.classList.remove("episode-title-expanded");
+                titleEl.classList.add("episode-title-collapsed");
+              }
+              if (desc) {
+                desc.classList.remove("episode-desc-expanded");
+                desc.classList.add("episode-desc-collapsed");
+              }
+              if (listenBtn) listenBtn.classList.add("hidden");
+              if (mobileImage) mobileImage.classList.add("hidden");
+            } else {
+              row.dataset.expanded = "true";
+              btn.setAttribute("aria-expanded", "true");
+              if (imageWrapper) imageWrapper.style.height = "180px";
+              if (titleEl) {
+                titleEl.classList.remove("episode-title-collapsed");
+                titleEl.classList.add("episode-title-expanded");
+              }
+              if (desc) {
+                desc.classList.remove("episode-desc-collapsed");
+                desc.classList.add("episode-desc-expanded");
+              }
+              if (listenBtn) listenBtn.classList.remove("hidden");
+              if (mobileImage) mobileImage.classList.remove("hidden");
             }
-            if (desc) {
-              desc.classList.remove("episode-desc-expanded");
-              desc.classList.add("episode-desc-collapsed");
-            }
-            if (listenBtn) listenBtn.classList.add("hidden");
-            if (mobileImage) mobileImage.classList.add("hidden");
-          } else {
-            // Expand
-            row.dataset.expanded = "true";
-            btn.setAttribute("aria-expanded", "true");
-            if (imageWrapper) imageWrapper.style.height = "180px";
-            if (titleEl) {
-              titleEl.classList.remove("episode-title-collapsed");
-              titleEl.classList.add("episode-title-expanded");
-            }
-            if (desc) {
-              desc.classList.remove("episode-desc-collapsed");
-              desc.classList.add("episode-desc-expanded");
-            }
-            if (listenBtn) listenBtn.classList.remove("hidden");
-            if (mobileImage) mobileImage.classList.remove("hidden");
-          }
+          });
         });
-      });
+      }
+
+      // --- helpers (mirror of src/lib/rss.ts + EpisodeRow.astro) ---
+      function decodeEntities(str: string) {
+        return str
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&#x27;/g, "'")
+          .replace(/&apos;/g, "'");
+      }
+      function escapeHtml(value: string | number) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+      function toTitleCase(title: string) {
+        const small = ["a","an","the","and","but","or","for","nor","on","at","to","by","in","of","up"];
+        const tc = title
+          .toLowerCase()
+          .split(" ")
+          .map((w) => (small.includes(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+          .join(" ");
+        return tc.charAt(0).toUpperCase() + tc.slice(1);
+      }
+
+      type Ep = { number: number | null; title: string; description: string; thumbnail: string };
+
+      function parseEpisodes(xmlText: string): Ep[] {
+        const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+        if (doc.querySelector("parsererror")) return [];
+        const items = Array.from(doc.querySelectorAll("item"));
+        const eps: Ep[] = [];
+        for (const item of items) {
+          const title = decodeEntities((item.querySelector("title")?.textContent || "").trim());
+          if (!title) continue;
+          const numMatch = title.match(/(?:ep\.?\s*|episode\s*)(\d+)/i) || title.match(/^(\d+)/);
+          // drop trailers / non-numbered promo items that aren't real episodes
+          if (!numMatch && /trailer/i.test(title)) continue;
+          const number = numMatch ? parseInt(numMatch[1]) : null;
+          const rawDesc = item.querySelector("description")?.textContent || "";
+          const description = decodeEntities(rawDesc.replace(/<[^>]*>/g, "")).substring(0, 400);
+          const img = item.getElementsByTagName("itunes:image")[0];
+          const thumbnail = img ? img.getAttribute("href") || "/images/cover-art.jpg" : "/images/cover-art.jpg";
+          eps.push({ number, title, description, thumbnail });
+        }
+        // Defensive: if a newest item is missing its number, infer it from the
+        // next numbered episode below it (feed is newest-first).
+        for (let i = eps.length - 1, last: number | null = null; i >= 0; i--) {
+          if (eps[i].number != null) last = eps[i].number;
+          else if (last != null) eps[i].number = ++last;
+        }
+        return eps.slice(0, EPISODE_LIMIT);
+      }
+
+      function buildEpisodeRow(ep: Ep, expanded: boolean) {
+        const title = escapeHtml(toTitleCase(ep.title));
+        const desc = escapeHtml(ep.description);
+        const thumb = escapeHtml(ep.thumbnail);
+        const label = ep.number != null ? "Episode " + escapeHtml(ep.number) : "New Episode";
+        const titleCls = expanded ? "episode-title-expanded" : "episode-title-collapsed";
+        const descCls = expanded ? "episode-desc-expanded" : "episode-desc-collapsed";
+        const listenHidden = expanded ? "" : " hidden";
+        const imgHeight = expanded ? "180px" : "60px";
+        const spotifyBtn = `<a href="${SHOW_URL}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-white/10 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/20 transition-colors" onclick="event.stopPropagation();"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="${SPOTIFY_PATH}"/></svg>Listen on Spotify</a>`;
+        return `
+          <div class="episode-row" data-expanded="${expanded ? "true" : "false"}">
+            <button class="episode-toggle w-full text-left cursor-pointer" aria-expanded="${expanded ? "true" : "false"}">
+              <div class="hidden md:grid md:grid-cols-[1fr_180px_1fr] gap-8 items-stretch">
+                <div class="flex flex-col gap-1 py-6">
+                  <span class="text-white/60 font-bold text-xs uppercase tracking-widest">${label}</span>
+                  <h4 class="font-normal text-white text-base md:text-lg mt-1 episode-title ${titleCls}">${title}</h4>
+                  <div class="episode-listen-btn mt-4${listenHidden}">${spotifyBtn}</div>
+                </div>
+                <div class="flex flex-col justify-end">
+                  <div class="relative overflow-hidden episode-image-wrapper rounded-t-lg" style="height: ${imgHeight}; transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);">
+                    <img src="${thumb}" alt="${title}" class="w-full aspect-square object-cover object-top border border-white rounded-t-lg" loading="lazy" />
+                  </div>
+                </div>
+                <div class="py-6">
+                  <p class="text-text-light text-sm leading-relaxed episode-desc ${descCls}">${desc}</p>
+                </div>
+              </div>
+              <div class="md:hidden py-6">
+                <div class="flex flex-col gap-1">
+                  <span class="text-white/60 font-bold text-xs uppercase tracking-widest">${label}</span>
+                  <h4 class="font-normal text-white text-base mt-1 episode-title">${title}</h4>
+                </div>
+                <div class="episode-mobile-image mt-4${listenHidden}">
+                  <img src="${thumb}" alt="${title}" class="w-full rounded-lg border border-white" loading="lazy" />
+                  <div class="mt-3">${spotifyBtn}</div>
+                </div>
+              </div>
+            </button>
+            <hr class="border-white/10" />
+          </div>`;
+      }
+
+      function renderEpisodes(eps: Ep[]) {
+        const list = document.getElementById("episode-list");
+        if (!list || !eps.length) return;
+        list.innerHTML = eps.map((ep, i) => buildEpisodeRow(ep, i === 0)).join("");
+        bindEpisodeToggles();
+      }
+
+      async function refreshEpisodes() {
+        try {
+          const res = await fetch(RSS_URL, { cache: "no-store" });
+          if (!res.ok) return;
+          const eps = parseEpisodes(await res.text());
+          if (eps.length) renderEpisodes(eps);
+        } catch {
+          // network/parse failure — keep the server-rendered list as-is
+        }
+      }
+
+      bindEpisodeToggles(); // wire up the build-time rows immediately
+      refreshEpisodes(); // then pull the live feed and re-render
     </script>
 
     <!-- Platform buttons -->
