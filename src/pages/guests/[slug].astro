@@ -1,0 +1,230 @@
+---
+/**
+ * One guest page — plan §3.1 / T4. "This is also the page a journalist or
+ * sponsor lands on."
+ *
+ * Same pattern library as the episode page, in the same order, so the two read
+ * as one site: charcoal header with the red eyebrow and the definitional lead
+ * in the first 30% of the page, cream quote section, cream body, the
+ * `bg-card-beige rounded-3xl` card for links, existing pill buttons throughout.
+ *
+ * Content order:
+ *   1. header — eyebrow (trade · city) · H1 name · the definitional lead, which
+ *      is the newest episode's hand-written summary (it already opens
+ *      "X is a <trade> in <city>") · studio + appearance count
+ *   2. best quotes            — only when real, sourced ones exist
+ *   3. their episode(s)       — every appearance, linked
+ *   4. links + the Corral bridge (profile where one is verified, trade jobs)
+ *   5. archive links
+ *
+ * Section 2 renders for nobody today: no episode has a cleaned transcript on
+ * disk, so every `pullQuotes` is empty. That is the deliberate outcome — see
+ * RUNBOOK.md §6.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+import {
+  EPISODES_PATH,
+  episodePath,
+  formatEpisodeDate,
+  humanDuration,
+  episodeHeadline,
+} from "../../lib/episodes";
+import {
+  getGuests,
+  guestJsonLd,
+  guestDescription,
+  appearanceCount,
+  GUESTS_PATH,
+  type Guest,
+} from "../../lib/guests";
+
+export async function getStaticPaths() {
+  const guests = await getGuests();
+  return guests.map((guest) => ({ params: { slug: guest.slug }, props: { guest } }));
+}
+
+interface Props {
+  guest: Guest;
+}
+
+const { guest } = Astro.props;
+
+// `getGuests` orders appearances newest-first and never returns an empty list.
+const latest = guest.episodes[0];
+const eyebrow = [guest.trade, guest.city].filter(Boolean).join(" · ");
+
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+const externalArrow =
+  '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>';
+---
+
+<BaseLayout
+  title={`${guest.name}, ${guest.trade} in ${guest.city} | The Trades Show`}
+  description={guestDescription(guest)}
+  image={guest.thumbnail}
+  jsonLd={guestJsonLd(guest)}
+>
+  <Navbar />
+  <main>
+    <!-- 1. Header: the entity signals, in plain text, above everything else. -->
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">{eyebrow}</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          {guest.name}
+        </h1>
+        {/* The definitional lead is the episode's own hand-written summary, not
+            the generated `guestLead` sentence: both open "X is a <trade> in
+            <city>", so stacking them printed the same claim twice. The generated
+            line still does its job in the meta description and on the index,
+            where one line is all there is room for; the studio it carries moves
+            to the meta row below. */}
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          {latest.data.summary}
+        </p>
+        <p class="text-white/60 text-sm mt-4">
+          {guest.studio ? `${guest.studio} · ` : ""}{appearanceCount(guest)} of The Trades Show
+        </p>
+      </div>
+    </section>
+
+    <!-- 2. Best quotes — renders only when the episode files carry real ones. -->
+    {guest.quotes.length > 0 && (
+      <section class="bg-cream py-20 md:py-28">
+        <div class="max-w-4xl mx-auto px-6 fade-in">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-8">In their words</p>
+          <div class="space-y-12">
+            {guest.quotes.map((q) => (
+              <blockquote>
+                <p class="font-extrabold text-2xl leading-tight">“{q.quote}”</p>
+                <footer class="text-black/60 text-sm mt-4">
+                  — {guest.name} ·{" "}
+                  <a href={episodePath(q.episodeSlug)} class="underline underline-offset-2 hover:text-black transition-colors">
+                    Episode {q.episodeNumber}
+                  </a>
+                  {q.timestamp && <span> · {q.timestamp}</span>}
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- 3. Every appearance, linked both ways with the episode pages. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">On the show</p>
+        <h2 class="font-extrabold text-2xl mb-8">
+          {guest.episodes.length === 1
+            ? `${guest.name}'s episode`
+            : `${guest.name}'s episodes`}
+        </h2>
+        <div class="space-y-8">
+          {guest.episodes.map((entry) => (
+            <a href={episodePath(entry.data.slug)} class="block group">
+              <div class="md:grid md:grid-cols-[180px_1fr] md:gap-8 md:items-start">
+                <div>
+                  <img
+                    src={entry.data.thumbnail}
+                    alt={episodeHeadline(entry.data)}
+                    class="w-full aspect-square object-cover object-top border border-black/10 rounded-lg"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="mt-4 md:mt-0">
+                  <span class="text-black/50 font-bold text-xs uppercase tracking-widest">
+                    Episode {entry.data.episodeNumber} · Season {entry.data.season}
+                  </span>
+                  <h3 class="font-bold text-base md:text-lg mt-2 leading-snug group-hover:text-red transition-colors">
+                    {episodeHeadline(entry.data)}
+                  </h3>
+                  <p class="text-black/60 text-xs mt-2">
+                    {formatEpisodeDate(entry.data.pubDate)} · {humanDuration(entry.data.duration)}
+                  </p>
+                  {/* One-appearance guests already have this exact paragraph in
+                      the header; printing it again three inches lower is noise.
+                      A guest with two episodes needs it to tell them apart. */}
+                  {guest.episodes.length > 1 && (
+                    <p class="text-base text-black/80 leading-relaxed mt-4">
+                      {entry.data.summary}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Their own links + the cross-venture bridge to The Corral. -->
+    <section class="bg-cream pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Find their work</p>
+          <h2 class="font-extrabold text-2xl mb-4">
+            {guest.studio ?? guest.name}
+          </h2>
+          {/* `guestLead` deliberately does NOT repeat here — it is already the
+              first thing the header says, in the episode's own words. */}
+          {guest.links.length > 0 && (
+            <div class="flex flex-wrap gap-3 mt-8">
+              {guest.links.map((l) => (
+                <a href={l.url} target="_blank" rel="noopener noreferrer" class={linkPill}>
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {(guest.corralArtisanUrl || guest.corralTradeUrl) && (
+            <div class="mt-10 pt-8 border-t border-black/10">
+              <p class="text-base text-black/80 leading-relaxed mb-6">
+                {guest.corralArtisanUrl
+                  ? `${guest.name} is also on The Corral, the national jobs board for artisans and the shops that hire them.`
+                  : "The Corral is the national jobs board for artisans and the shops that hire them."}
+              </p>
+              <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+                {guest.corralArtisanUrl && (
+                  <a
+                    href={guest.corralArtisanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class={creamBtn}
+                  >
+                    {guest.name} on The Corral
+                    <Fragment set:html={externalArrow} />
+                  </a>
+                )}
+                {guest.corralTradeUrl && (
+                  <a
+                    href={guest.corralTradeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class={linkPill}
+                  >
+                    Browse {guest.trade.toLowerCase()} jobs
+                    <Fragment set:html={externalArrow} />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <!-- 5. Back into the archive, both directions. -->
+        <div class="mt-12 flex flex-col sm:flex-row gap-4">
+          <a href={GUESTS_PATH} class={creamBtn}>All guests</a>
+          <a href={EPISODES_PATH} class={linkPill}>All episodes</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

@@ -1,0 +1,341 @@
+---
+/**
+ * `/press` — the one-sheet a journalist checks before replying to a pitch
+ * (plan §4.2 / T12).
+ *
+ * NUMBERS. The plan asks for "real audience numbers (social-first, never the
+ * podcast-download or 500k vanity framings)" and files the exact figures as
+ * Decision 7, which is still open. So this page states the SHAPE of the
+ * audience — which channels carry it, which are small — in words that stay true
+ * as the numbers move, and marks the two places a figure belongs with
+ * TODO(BRIANA) comments in this file. Nothing renders a placeholder: a page
+ * that says "TK" in front of a reporter is worse than a page that says nothing,
+ * and an invented number is worse than both. When the figures are signed off,
+ * fill the two slots below and mirror them onto /partner.
+ *
+ * Every fact on this page is already published somewhere: the founder
+ * paragraphs are the homepage's Meet the Host copy, the format facts are
+ * derived from the episode collection at build time (count, seasons, run
+ * times), and the talk is a real, linkable video.
+ *
+ * Design is the episode/guest pattern library, unchanged.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+import {
+  getEpisodesNewestFirst,
+  getEpisodesBySeason,
+  episodePath,
+  formatEpisodeDate,
+  GUESTS_PATH,
+  EPISODES_PATH,
+} from "../lib/episodes";
+import { BAY_AREA_ROUNDUP_PATH } from "../lib/roundups";
+
+const episodes = await getEpisodesNewestFirst();
+const bySeason = await getEpisodesBySeason();
+const latest = episodes[0];
+
+/** Run times, straight from the feed durations already in frontmatter. */
+const minutes = episodes
+  .map((e) => e.data.duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?/))
+  .map((m) => (m ? Number(m[1] ?? 0) * 60 + Number(m[2] ?? 0) : 0))
+  .filter((n) => n > 20); // the one solo mini-episode is not a typical run time
+const runLow = Math.floor(Math.min(...minutes) / 5) * 5;
+const runHigh = Math.ceil(Math.max(...minutes) / 5) * 5;
+
+/** Trades covered, for the "what the show is" paragraph. Derived, never typed. */
+const trades = [...new Set(episodes.filter((e) => !e.data.soloEpisode).map((e) => e.data.trade.toLowerCase()))];
+const article = (word: string) => (/^[aeiou]/i.test(word) ? `an ${word}` : `a ${word}`);
+/** "an ornamental plasterer, a leather artisan, a florist and an architectural blacksmith" */
+const tradeSample = trades.slice(0, 4).map(article);
+const tradeSentence = `${tradeSample.slice(0, -1).join(", ")} and ${tradeSample.at(-1)}`;
+
+const PRESS_EMAIL = "briana@thetradesshowpod.com";
+const pressMailto = `mailto:${PRESS_EMAIL}?subject=Press%20Inquiry%20%E2%80%94%20The%20Trades%20Show`;
+
+/** Files that exist in `public/`. Every one was confirmed on disk before listing. */
+const ASSETS = [
+  { label: "Show cover art (JPG, 500×500)", href: "/images/cover-art.jpg" },
+  { label: "Stacked logo, black (SVG)", href: "/images/logo-stacked-black.svg" },
+  { label: "Stacked logo, white (SVG)", href: "/images/logo-stacked-white.svg" },
+  { label: "Wordmark, black (SVG)", href: "/images/wordmark-black.svg" },
+  { label: "Wordmark, white (SVG)", href: "/images/wordmark-white.svg" },
+  { label: "Host headshot (PNG)", href: "/images/briana-headshot.png" },
+];
+
+/**
+ * The three story angles the show pitches, verbatim from the press deck. They
+ * are on the page because a journalist reading a cold pitch wants to know what
+ * the story could be, not only what the show is.
+ */
+const ANGLES = [
+  {
+    title: "Going analog in the AI capital of the world",
+    body:
+      "San Francisco is where the future is being built, and it is also where a plaster shop, an atelier and a forge are still open on a Tuesday. The show is not an argument against the technology. It is about what happens when both things are true in one city.",
+  },
+  {
+    title: "What AI can't learn: the intelligence in your hands",
+    body:
+      "Every guest carries knowledge that lives in their hands and cannot be written down: the sound a shoe makes when the last is right, when clay is ready, how hot is hot enough. That knowledge is transmitted by apprenticeship or it is lost.",
+  },
+  {
+    title: "The oldest trades in the newest city",
+    body:
+      "Long before code, there was craft. Several of the shops on this show are the last of their kind in San Francisco, and their owners are the last people who know how to do the work.",
+  },
+];
+
+const title = "Press | The Trades Show";
+const description =
+  "Press kit for The Trades Show: what the show is, who hosts it, the story angles it covers, downloadable logos and art, and how to reach us. On-location conversations with working artisans, filmed in their own workshops.";
+
+const platformBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full border border-white/20 hover:bg-white/10 transition-colors";
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+---
+
+<BaseLayout title={title} description={description}>
+  <Navbar />
+  <main>
+    <!-- 1. What the show is, in plain text, above everything else. -->
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Press</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          Press kit
+        </h1>
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          The Trades Show is a video and audio interview show about working artisans, hosted
+          by Briana Ottoboni and recorded on location in each guest's own workshop. Season 1
+          was recorded across the Bay Area and New York; Season 2 is set in San Francisco and
+          runs through mid-December 2026. {episodes.length} episodes have published so far,
+          with guests including {tradeSentence}.
+        </p>
+        <p class="text-white/60 text-sm mt-4">
+          Press contact: <a href={pressMailto} class="underline underline-offset-2 hover:text-white transition-colors">{PRESS_EMAIL}</a>
+        </p>
+        <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 mt-8">
+          <a href={pressMailto} class={platformBtn}>Email press desk</a>
+          <a href={episodePath(latest.data.slug)} class={platformBtn}>Watch the latest episode</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Founder story. Same copy as the homepage's Meet the Host block. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">The host</p>
+        <h2 class="font-extrabold text-2xl mb-8">Briana Ottoboni</h2>
+        <div class="md:grid md:grid-cols-[180px_1fr] md:gap-8 md:items-start">
+          <div>
+            <img
+              src="/images/briana-headshot.png"
+              alt="Briana Ottoboni, host of The Trades Show"
+              class="w-full aspect-square object-cover object-top border border-black/10 rounded-lg grayscale"
+              loading="lazy"
+            />
+          </div>
+          <div class="mt-6 md:mt-0 space-y-5">
+            <p class="text-base md:text-lg text-black/80 leading-relaxed">
+              Briana Ottoboni is the host and creator of The Trades Show. After being
+              awe-inspired by the work of a local cobbler who transformed a pair of old
+              loafers, she apprenticed with a shoe cobbler and developed a fascination for
+              the artisan trades, and a determination to revive them to their original glory,
+              just like the cobbler did to her shoes.
+            </p>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed">
+              The Trades Show was born as a storytelling medium to highlight artisan pathways
+              in a return to what it means to be human. She is also the founder of The
+              Corral, a national jobs board connecting artisans with work.
+            </p>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed">
+              In June 2026 she gave a talk at the IDEA SF conference titled "Reviving
+              Artisanship in the Age of AI," making the public case for the trades in a room
+              full of technologists.
+            </p>
+            <div class="flex flex-wrap gap-3 pt-2">
+              <a href="https://youtu.be/KyHcglqyYGs" target="_blank" rel="noopener noreferrer" class={linkPill}>
+                Watch the IDEA SF talk
+              </a>
+              <a href="https://www.linkedin.com/in/brianaottoboni/" target="_blank" rel="noopener noreferrer" class={linkPill}>
+                LinkedIn
+              </a>
+              <a href="https://www.brianaaugustina.com/" target="_blank" rel="noopener noreferrer" class={linkPill}>
+                brianaaugustina.com
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Format. Every number here is derived from the episode collection. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Format</p>
+        <h2 class="font-extrabold text-2xl mb-6">How the show is made</h2>
+        <ul class="space-y-4">
+          <li class="text-base md:text-lg text-black/80 leading-relaxed">
+            <strong>One artisan per episode</strong>, filmed in their own shop. No studio, no
+            panel, no co-host.
+          </li>
+          <li class="text-base md:text-lg text-black/80 leading-relaxed">
+            <strong>Video first, audio everywhere.</strong> Full episodes publish on YouTube,
+            Spotify and Apple Podcasts, with short vertical clips on Instagram and TikTok.
+          </li>
+          <li class="text-base md:text-lg text-black/80 leading-relaxed">
+            <strong>Episodes run about {runLow} to {runHigh} minutes</strong>, biweekly during a
+            season.
+          </li>
+          <li class="text-base md:text-lg text-black/80 leading-relaxed">
+            <strong>{bySeason.length} seasons, {episodes.length} episodes</strong> published to
+            date, the most recent on {formatEpisodeDate(latest.data.pubDate)}.
+          </li>
+          <li class="text-base md:text-lg text-black/80 leading-relaxed">
+            <strong>Every episode has its own page</strong> on this site with show notes,
+            chapters and the guest's own links, and every guest has a profile page.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4. Audience, described rather than counted. See the file header. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Audience</p>
+        <h2 class="font-extrabold text-2xl mb-6">Who watches, and where</h2>
+        <div class="space-y-5">
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            The audience is social-first and video-led. Most of it is on Instagram and
+            YouTube, where the short workshop clips travel; the podcast feeds are the
+            smallest of the show's channels, not the largest. Anyone sizing this show by
+            download counts is reading the wrong number.
+          </p>
+          {/*
+            TODO(BRIANA): Decision 7 — the exact figures go HERE, as one short
+            paragraph, once signed off. Convention (reference_tts_audience_metrics):
+            per-channel monthly reach for Instagram / YouTube / TikTok / newsletter,
+            each labelled with the month it was measured. Do NOT publish the
+            "500k+ lifetime social views" aggregate — Briana has flagged it as a
+            vanity figure driven by one video, and a reporter who checks it will
+            find that out. Mirror whatever lands here onto /partner in the same
+            change so the two pages cannot disagree.
+          */}
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            The people watching are, in rough order: makers and tradespeople, people
+            considering a career change into a trade, and design-literate viewers in the Bay
+            Area who buy handmade work. Guests bring their own following with them, so reach
+            varies widely by episode depending on who is in the chair.
+          </p>
+          {/*
+            TODO(BRIANA): if you want a named example of guest-driven reach on this
+            page (e.g. the Stuart Brioza episode reaching his audience), put the
+            figure here with the date it was measured. It is used in sponsor
+            outreach already; it is only missing here because the number itself is
+            part of Decision 7.
+          */}
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Current figures for any channel are available on request — email the press desk
+            and they come back the same week.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Story angles. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Story angles</p>
+        <h2 class="font-extrabold text-2xl mb-6">What the show is actually about</h2>
+        <p class="text-base md:text-lg text-black/80 leading-relaxed mb-10">
+          Three angles the show is built to serve. It is worth saying plainly that none of
+          them is an anti-technology argument: the premise is that craft and technology are
+          both true at once, and the interesting part is the seam between them.
+        </p>
+        <div class="space-y-10">
+          {ANGLES.map((angle) => (
+            <div>
+              <h3 class="font-bold text-lg mb-3">{angle.title}</h3>
+              <p class="text-base md:text-lg text-black/80 leading-relaxed">{angle.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Assets + coverage. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Assets</p>
+          <h2 class="font-extrabold text-2xl mb-4">Everything you need to file</h2>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed mb-8">
+            Logos, cover art and a headshot, all cleared for editorial use. Episode
+            stills and workshop footage are available on request, including footage of the
+            guest at work.
+          </p>
+          <ul class="space-y-3">
+            {ASSETS.map((asset) => (
+              <li>
+                <a
+                  href={asset.href}
+                  download
+                  class="text-base text-black/80 underline underline-offset-2 hover:text-red transition-colors"
+                >
+                  {asset.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <div class="mt-10 pt-8 border-t border-black/10">
+            <h3 class="font-bold text-lg mb-4">Reporting on a guest?</h3>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed mb-6">
+              Every guest has a page here with their trade, their city, their own links and
+              the episode they appear in. The Bay Area guide is the fastest way to scan the
+              full roster for the region.
+            </p>
+            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+              <a href={GUESTS_PATH} class={creamBtn}>All guests</a>
+              <a href={BAY_AREA_ROUNDUP_PATH} class={linkPill}>Bay Area artisans guide</a>
+              <a href={EPISODES_PATH} class={linkPill}>All episodes</a>
+            </div>
+          </div>
+
+          <div class="mt-10 pt-8 border-t border-black/10">
+            <h3 class="font-bold text-lg mb-4">Previous coverage</h3>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed">
+              Briana speaks about the trades on stage and on other people's shows. The
+              IDEA SF talk above is the fullest public version of the argument. A full
+              coverage list is available on request.
+            </p>
+            {/*
+              TODO(BRIANA): replace the sentence above with the real coverage list
+              once it is compiled — publication, headline, date, link, newest first.
+              It is deliberately absent rather than sparse: a "previous coverage"
+              heading over one or two entries reads worse to a reporter than a
+              sentence offering the list.
+            */}
+          </div>
+
+          <div class="mt-10 pt-8 border-t border-black/10">
+            <h3 class="font-bold text-lg mb-4">Get in touch</h3>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed mb-6">
+              Interviews, review copies of an episode ahead of publication, guest
+              introductions and current audience figures all come from the same inbox.
+              Deadlines get priority — say so in the subject line.
+            </p>
+            <a href={pressMailto} class={creamBtn}>Email the press desk</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

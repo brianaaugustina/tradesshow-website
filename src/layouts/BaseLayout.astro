@@ -1,15 +1,42 @@
 ---
 import "../styles/global.css";
+import { siteEntityGraph, jsonLdString, SITE_DESCRIPTION } from "../lib/entity";
 
 interface Props {
   title?: string;
   description?: string;
+  /** Page-specific share image (episode art). Absolute or site-root-relative. */
+  image?: string;
+  /** Extra JSON-LD graph for a page (episode, guest…). Rendered after the base graph. */
+  jsonLd?: object;
 }
 
 const {
   title = "The Trades Show — On location with artisans shaping the future of craftwork",
-  description = "Each season, a different city. Each episode, inside the workshop of a new story. Watch, listen, and step inside the trades that shape our culture.",
+  // The page-level description. It drives <meta>/OG/Twitter and nothing else —
+  // it must NOT reach siteEntityGraph(), whose PodcastSeries/Organization are
+  // site-wide @ids that always carry SITE_DESCRIPTION (see src/lib/entity.ts).
+  description = SITE_DESCRIPTION,
+  image = "/images/cover-art.jpg",
+  jsonLd,
 } = Astro.props;
+
+// Every absolute URL on the site resolves against `site` in astro.config.mjs.
+// Scrapers drop relative og:image values, which is why these are built here and
+// not written by hand in the tags below.
+// The trailing slash is stripped to honour `trailingSlash: 'never'`, so the
+// canonical, og:url and the sitemap's <loc> are byte-identical strings for
+// every route — @astrojs/sitemap emits the root as `…pod.com`, not `…pod.com/`,
+// and a canonical that disagrees with the sitemap is a self-inflicted duplicate.
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).href.replace(/\/$/, "");
+const imageUrl = new URL(image, Astro.site).href;
+
+// Intrinsic size of /images/cover-art.jpg. Twitter/LinkedIn use these to
+// reserve the card before the image lands; a wrong pair is worse than none, so
+// re-measure if the default image is ever replaced.
+const isDefaultImage = image === "/images/cover-art.jpg";
+const imageWidth = isDefaultImage ? "500" : undefined;
+const imageHeight = isDefaultImage ? "500" : undefined;
 ---
 
 <!doctype html>
@@ -20,28 +47,40 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonicalUrl} />
 
     <!-- Open Graph -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content="/images/cover-art.jpg" />
+    <meta property="og:image" content={imageUrl} />
+    {imageWidth && <meta property="og:image:width" content={imageWidth} />}
+    {imageHeight && <meta property="og:image:height" content={imageHeight} />}
+    <meta property="og:image:alt" content={title} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://thetradesshowpod.com" />
+    <meta property="og:site_name" content="The Trades Show" />
+    <meta property="og:url" content={canonicalUrl} />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content="/images/cover-art.jpg" />
+    <meta name="twitter:image" content={imageUrl} />
 
     <!-- Preload critical font -->
     <link
       rel="preload"
-      href="/fonts/TradesShowRound-Regular.ttf"
+      href="/fonts/TradesShowRound-Regular.woff2"
       as="font"
-      type="font/ttf"
+      type="font/woff2"
       crossorigin
     />
+
+    <!-- Entity graph (invisible; see src/lib/entity.ts) -->
+    <script
+      type="application/ld+json"
+      set:html={jsonLdString(siteEntityGraph())}
+    />
+    {jsonLd && <script type="application/ld+json" set:html={jsonLdString(jsonLd)} />}
 
     <title>{title}</title>
   </head>

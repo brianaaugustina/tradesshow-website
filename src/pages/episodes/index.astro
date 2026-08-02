@@ -1,0 +1,124 @@
+---
+/**
+ * `/episodes` — the archive (plan §2.5, last paragraph).
+ *
+ * Reuses the visual rhythm of NowPlaying's episode rows: charcoal section,
+ * `Episode NN` eyebrow, title, square bordered thumbnail, summary line,
+ * `border-white/10` dividers, `1fr 180px 1fr` at `md`. The homepage's rows are
+ * an expand/collapse control; these are plain links, so nothing here re-uses
+ * EpisodeRow.astro (which the live-refresh script mirrors and must keep
+ * mirroring).
+ *
+ * Grouped by season, newest season first. Season headers name the city only
+ * when every episode in that season shares one — no season is labelled with a
+ * place its episodes don't already carry in frontmatter.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+import {
+  getEpisodesBySeason,
+  getEpisodesNewestFirst,
+  episodesIndexJsonLd,
+  episodePath,
+  formatEpisodeDate,
+  humanDuration,
+  episodeHeadline,
+  GUESTS_PATH,
+} from "../../lib/episodes";
+
+const bySeason = await getEpisodesBySeason();
+const all = await getEpisodesNewestFirst();
+
+// Same pill as the episode pages' "All episodes" control — one string so the
+// two cannot drift.
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+
+const title = "Episodes — The Trades Show";
+const description =
+  "Every episode of The Trades Show: on-location conversations with modern artisans — blacksmiths, chefs, florists, leatherworkers, plasterers — about the craft, the business, and the future of making things by hand.";
+
+/** Only when it is true of every episode in the season. */
+function seasonCity(episodes: typeof all): string | null {
+  const cities = new Set(episodes.map((e) => e.data.city));
+  return cities.size === 1 ? [...cities][0] : null;
+}
+---
+
+<BaseLayout title={title} description={description} jsonLd={episodesIndexJsonLd(all)}>
+  <Navbar />
+  <main>
+    <section class="bg-charcoal pt-28 md:pt-32 pb-20 md:pb-28">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="mb-12 max-w-3xl">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">The Archive</p>
+          <h1 class="font-extrabold text-2xl md:text-3xl text-white mb-4 leading-tight">Episodes</h1>
+          <p class="text-text-light text-base md:text-lg leading-relaxed">
+            Every episode of The Trades Show, on location with the artisans making things by
+            hand — the craft, the business behind it, and what the trade needs to survive
+            the next generation.
+          </p>
+        </div>
+
+        {bySeason.map(({ season, episodes }) => {
+          const city = seasonCity(episodes);
+          return (
+            <div class="mb-16 last:mb-0 fade-in">
+              <div class="flex items-baseline gap-3 mb-2">
+                <h2 class="font-extrabold text-2xl text-white">
+                  Season {season}{city && <span class="text-white/50"> · {city}</span>}
+                </h2>
+              </div>
+              <p class="text-white/60 text-sm mb-6">
+                {episodes.length} {episodes.length === 1 ? "episode" : "episodes"}
+              </p>
+              <hr class="border-white/10" />
+
+              {episodes.map((entry) => (
+                <a href={episodePath(entry.data.slug)} class="block group">
+                  <div class="py-6 md:grid md:grid-cols-[1fr_180px_1fr] md:gap-8 md:items-center">
+                    <div class="flex flex-col gap-1 md:py-2 order-1">
+                      <span class="text-white/60 font-bold text-xs uppercase tracking-widest">
+                        Episode {entry.data.episodeNumber} · {entry.data.trade}
+                      </span>
+                      <h3 class="font-normal text-white text-base md:text-lg mt-1 group-hover:text-text-light transition-colors">
+                        {episodeHeadline(entry.data)}
+                      </h3>
+                      <span class="text-white/40 text-xs mt-2">
+                        {formatEpisodeDate(entry.data.pubDate)} · {humanDuration(entry.data.duration)}
+                      </span>
+                    </div>
+                    <div class="mt-4 md:mt-0 order-2">
+                      <img
+                        src={entry.data.thumbnail}
+                        alt={episodeHeadline(entry.data)}
+                        class="w-full aspect-square object-cover object-top border border-white rounded-lg"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div class="mt-4 md:mt-0 order-3">
+                      <p class="text-text-light text-sm leading-relaxed">{entry.data.summary}</p>
+                    </div>
+                  </div>
+                  <hr class="border-white/10" />
+                </a>
+              ))}
+            </div>
+          );
+        })}
+
+        {all.length === 0 && (
+          <p class="text-text-light py-8">Episode pages are on their way.</p>
+        )}
+
+        <!-- The only inbound link to /guests until the nav grows (Decision 2,
+             Phase 4). Without it the directory is sitemap-only. -->
+        <div class="mt-12">
+          <a href={GUESTS_PATH} class={creamBtn}>Meet the guests</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

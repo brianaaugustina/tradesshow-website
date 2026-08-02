@@ -1,8 +1,24 @@
 ---
 import EpisodeRow from "./EpisodeRow.astro";
 import { fetchEpisodes } from "../lib/rss";
+import { getEpisodeCardLinks } from "../lib/episodes";
 
 const episodes = await fetchEpisodes(5);
+
+/**
+ * Plan §2.7 — LINK REPOINT ONLY. The card's content still comes from the RSS
+ * feed exactly as before (build-time here, live-refreshed a second after load);
+ * the only thing the episode collection contributes is where two hrefs point:
+ *
+ *   title            → `/episodes/{slug}`   (the new episode page)
+ *   Listen on Spotify → the REAL per-episode Spotify URL, so the existing
+ *                       button label stays true (Decision 3, option b)
+ *
+ * Keyed by episode number, the join key `rss.ts` already parses out of the feed
+ * title. An episode with no collection entry keeps today's behaviour: no title
+ * link, Spotify *show* URL on the button.
+ */
+const cardLinks = await getEpisodeCardLinks();
 ---
 
 <section class="bg-charcoal py-20 md:py-28">
@@ -22,28 +38,55 @@ const episodes = await fetchEpisodes(5);
     <!-- Episode list (server-rendered at build, refreshed live on load) -->
     <div class="mb-12" id="episode-list">
       {episodes.length > 0 ? (
-        episodes.map((ep, i) => (
-          <EpisodeRow
-            number={ep.number}
-            title={ep.title}
-            thumbnail={ep.thumbnail}
-            description={ep.description}
-            spotifyUrl={ep.spotifyUrl}
-            defaultExpanded={i === 0}
-          />
-        ))
+        episodes.map((ep, i) => {
+          const links = ep.number != null ? cardLinks[String(ep.number)] : undefined;
+          return (
+            <EpisodeRow
+              number={ep.number}
+              title={ep.title}
+              thumbnail={ep.thumbnail}
+              description={ep.description}
+              spotifyUrl={links?.spotifyUrl ?? ep.spotifyUrl}
+              episodeUrl={links?.url ?? null}
+              defaultExpanded={i === 0}
+            />
+          );
+        })
       ) : (
         <p class="text-text-light text-center py-8">Episodes loading soon...</p>
       )}
     </div>
+
+    <!-- The same number → links map, handed to the live-refresh script below so
+         its re-rendered cards resolve the same hrefs as the build-time ones. -->
+    <script
+      type="application/json"
+      id="episode-links"
+      is:inline
+      set:html={JSON.stringify(cardLinks)}
+    />
 
     <!-- Episode expand/collapse + live RSS refresh script -->
     <script>
       const RSS_URL = "https://anchor.fm/s/1058aec28/podcast/rss";
       const SHOW_URL = "https://open.spotify.com/show/0g5nz0QQY4lNTi7qhfjBoj";
       const EPISODE_LIMIT = 5;
+      const DESCRIPTION_LIMIT = 400;
       const SPOTIFY_PATH =
         "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z";
+
+      // Build-time `episodeNumber → { url, spotifyUrl }` map (plan §2.7). Without
+      // it this script would stamp the Spotify *show* URL back onto every card a
+      // second after load and drop the title links. A missing/unparseable blob
+      // degrades to exactly the pre-Phase-2 behaviour.
+      type EpisodeLinks = { url: string; spotifyUrl: string };
+      let EPISODE_LINKS: Record<string, EpisodeLinks> = {};
+      try {
+        const blob = document.getElementById("episode-links")?.textContent;
+        if (blob) EPISODE_LINKS = JSON.parse(blob);
+      } catch {
+        EPISODE_LINKS = {};
+      }
 
       // --- toggle behavior (re-bindable after live re-render) ---
       function bindEpisodeToggles() {
@@ -112,6 +155,28 @@ const episodes = await fetchEpisodes(5);
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;");
       }
+      // Mirror of truncateAtSentence() in src/lib/rss.ts (T7). Keep in lockstep:
+      // this one produces the text the visitor actually reads after the live
+      // refresh, the other produces the build-time HTML crawlers read.
+      function truncateAtSentence(text: string, limit = DESCRIPTION_LIMIT) {
+        const clean = text.trim();
+        if (clean.length <= limit) return clean;
+        const head = clean.slice(0, limit);
+        const lastSentenceEnd = Math.max(
+          head.lastIndexOf("."),
+          head.lastIndexOf("!"),
+          head.lastIndexOf("?")
+        );
+        if (lastSentenceEnd >= limit / 2) {
+          return head.slice(0, lastSentenceEnd + 1).trim();
+        }
+        const lastSpace = head.lastIndexOf(" ");
+        const words = (lastSpace > 0 ? head.slice(0, lastSpace) : head)
+          .replace(/[\s,;:—–-]+$/, "")
+          .trim();
+        return /[.!?]$/.test(words) ? words : words + "…";
+      }
+
       function toTitleCase(title: string) {
         const small = ["a","an","the","and","but","or","for","nor","on","at","to","by","in","of","up"];
         const tc = title
@@ -137,7 +202,9 @@ const episodes = await fetchEpisodes(5);
           if (!numMatch && /trailer/i.test(title)) continue;
           const number = numMatch ? parseInt(numMatch[1]) : null;
           const rawDesc = item.querySelector("description")?.textContent || "";
-          const description = decodeEntities(rawDesc.replace(/<[^>]*>/g, "")).substring(0, 400);
+          const description = truncateAtSentence(
+            decodeEntities(rawDesc.replace(/<[^>]*>/g, ""))
+          );
           const img = item.getElementsByTagName("itunes:image")[0];
           const thumbnail = img ? img.getAttribute("href") || "/images/cover-art.jpg" : "/images/cover-art.jpg";
           eps.push({ number, title, description, thumbnail });
@@ -160,29 +227,31 @@ const episodes = await fetchEpisodes(5);
         const descCls = expanded ? "episode-desc-expanded" : "episode-desc-collapsed";
         const listenHidden = expanded ? "" : " hidden";
         const imgHeight = expanded ? "180px" : "60px";
-        const spotifyBtn = `<a href="${SHOW_URL}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-white/10 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/20 transition-colors" onclick="event.stopPropagation();"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="${SPOTIFY_PATH}"/></svg>Listen on Spotify</a>`;
+        // Same fallback rule as the build-time render: no collection entry →
+        // no title link and the Spotify show URL.
+        const links = ep.number != null ? EPISODE_LINKS[String(ep.number)] : undefined;
+        const spotifyHref = links ? links.spotifyUrl : SHOW_URL;
+        const titleHtml = links ? `<a href="${escapeHtml(links.url)}">${title}</a>` : title;
+        const spotifyBtn = `<a href="${escapeHtml(spotifyHref)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-white/10 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/20 transition-colors" onclick="event.stopPropagation();"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="${SPOTIFY_PATH}"/></svg>Listen on Spotify</a>`;
+        // MIRROR of EpisodeRow.astro (T8: one DOM rendering, layout switched by
+        // CSS at `md`). Edit both together — if this template drifts, the page
+        // silently reverts to the old markup a second after load.
         return `
           <div class="episode-row" data-expanded="${expanded ? "true" : "false"}">
             <button class="episode-toggle w-full text-left cursor-pointer" aria-expanded="${expanded ? "true" : "false"}">
-              <div class="hidden md:grid md:grid-cols-[1fr_180px_1fr] gap-8 items-stretch">
-                <div class="flex flex-col gap-1 py-6">
+              <div class="episode-card py-6 md:py-0 md:grid md:grid-cols-[1fr_180px_1fr] md:gap-8 md:items-stretch">
+                <div class="episode-cell-main flex flex-col gap-1 md:py-6">
                   <span class="text-white/60 font-bold text-xs uppercase tracking-widest">${label}</span>
-                  <h4 class="font-normal text-white text-base md:text-lg mt-1 episode-title ${titleCls}">${title}</h4>
+                  <h4 class="font-normal text-white text-base md:text-lg mt-1 episode-title ${titleCls}">${titleHtml}</h4>
                   <div class="episode-listen-btn mt-4${listenHidden}">${spotifyBtn}</div>
                 </div>
-                <div class="flex flex-col justify-end">
+                <div class="hidden md:flex md:flex-col md:justify-end">
                   <div class="relative overflow-hidden episode-image-wrapper rounded-t-lg" style="height: ${imgHeight}; transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);">
                     <img src="${thumb}" alt="${title}" class="w-full aspect-square object-cover object-top border border-white rounded-t-lg" loading="lazy" />
                   </div>
                 </div>
-                <div class="py-6">
+                <div class="hidden md:block md:py-6">
                   <p class="text-text-light text-sm leading-relaxed episode-desc ${descCls}">${desc}</p>
-                </div>
-              </div>
-              <div class="md:hidden py-6">
-                <div class="flex flex-col gap-1">
-                  <span class="text-white/60 font-bold text-xs uppercase tracking-widest">${label}</span>
-                  <h4 class="font-normal text-white text-base mt-1 episode-title">${title}</h4>
                 </div>
                 <div class="episode-mobile-image mt-4${listenHidden}">
                   <img src="${thumb}" alt="${title}" class="w-full rounded-lg border border-white" loading="lazy" />

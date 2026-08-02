@@ -1,0 +1,225 @@
+---
+/**
+ * `/be-a-guest` — pre-qualifies the enquiry that used to arrive as a bare
+ * mailto from the footer (plan §4.2 / T12).
+ *
+ * The job of this page is to save two emails. Somebody who reads it should be
+ * able to tell without asking whether they are a fit, and should know what a
+ * taping day costs them in time before they say yes.
+ *
+ * WHAT IT DOES NOT DO: promise anything about publication timing, audience, or
+ * money. Those are conversations, and a landing page that guesses at them
+ * creates an expectation the show then has to walk back.
+ *
+ * The "who we look for" criteria are the show's actual working filters
+ * (full-time at the craft, functional work made by hand, an open shop we can
+ * film in, in the season's city). The season scope is stated in dates because a
+ * page that says "currently" goes stale silently.
+ *
+ * Design is the episode/guest pattern library, unchanged.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+import { getEpisodesNewestFirst, episodePath, GUESTS_PATH } from "../lib/episodes";
+import { BAY_AREA_ROUNDUP_PATH } from "../lib/roundups";
+
+const episodes = await getEpisodesNewestFirst();
+const latest = episodes[0];
+
+/**
+ * Run times, from the feed durations already in frontmatter. Identical
+ * derivation to /press's, including the >20-minute filter that drops the one
+ * solo mini-episode — a prospective guest asking "how long is this?" and a
+ * journalist asking the same question must not get two different answers.
+ */
+const minutes = episodes
+  .map((e) => e.data.duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?/))
+  .map((m) => (m ? Number(m[1] ?? 0) * 60 + Number(m[2] ?? 0) : 0))
+  .filter((n) => n > 20);
+const runLow = Math.floor(Math.min(...minutes) / 5) * 5;
+const runHigh = Math.ceil(Math.max(...minutes) / 5) * 5;
+
+const EMAIL = "briana@thetradesshowpod.com";
+const applyMailto = `mailto:${EMAIL}?subject=Guest%20Application%20%E2%80%94%20The%20Trades%20Show`;
+const suggestMailto = `mailto:${EMAIL}?subject=Guest%20Suggestion%20%E2%80%94%20The%20Trades%20Show`;
+
+/** The show's real filters, written the way a maker would check themselves against them. */
+const LOOKING_FOR = [
+  {
+    title: "You do this for a living",
+    body:
+      "The trade is your work, not your weekend. It does not have to be your only income and it does not have to be comfortable, but it has to be the thing you are actually trying to do.",
+  },
+  {
+    title: "The work is made by hand, and it gets used",
+    body:
+      "Furniture, shoes, ironwork, pots, flowers, food, garments, plaster. Functional craft rather than art objects, though plenty of guests cross that line and we are happy to follow them across it.",
+  },
+  {
+    title: "There is a shop we can film in",
+    body:
+      "The episode is recorded where the work happens. A bench, a forge, a kitchen, a studio in a shipyard. It does not need to be tidy. It needs to be yours and it needs to be reachable.",
+  },
+  {
+    title: "You are in the season's city",
+    body:
+      // TODO(BRIANA): a Season 3 line lived here ("planned for 2027, outreach
+      // starts this winter") and was cut before ship — it is a dated public
+      // commitment and nothing published backs it yet. Put it back in your own
+      // words once S3's city and timing are decided. The sentence below makes
+      // the same "write anyway" point using only what the episode collection
+      // already proves (S1 was recorded in the Bay Area and New York).
+      "Season 2 is San Francisco and the Bay Area, running through mid-December 2026. Season 1 was recorded in the Bay Area and in New York, so if you work somewhere else, an introduction is still worth sending.",
+  },
+];
+
+/** What a taping actually costs a guest, in their time. */
+const PROCESS = [
+  {
+    step: "A short call first",
+    body:
+      "Twenty or thirty minutes, no camera. We talk about your work and what you would want to say. Nothing is booked off this call.",
+  },
+  {
+    step: "Questions, sent ahead",
+    body:
+      "Briana writes a question doc from that call and sends it before the shoot. You will know the shape of the conversation in advance. Nothing is scripted and nothing is rehearsed.",
+  },
+  {
+    step: "One day in your shop",
+    body:
+      "A few hours on site. A sit-down interview, then footage of you working. One host, a small crew, and no lighting rig that will take over your space.",
+  },
+  {
+    step: "Editing, then a heads-up",
+    body:
+      "You are not asked to review the cut, but you will know when the episode is going live so you can be ready for it.",
+  },
+  {
+    step: "You get the footage of your work",
+    body:
+      // No testimonial here on purpose: a sentence about what past guests have
+      // said needs a guest who said it, on the record. The fact stands alone.
+      "Every episode produces short vertical clips as well as the full conversation, and those are yours to use.",
+  },
+];
+
+const title = "Be a Guest on The Trades Show | Working Artisans, Filmed in Their Own Shops";
+const description =
+  "The Trades Show records with working artisans in their own workshops. Who the show looks for, what a taping day involves, and how to put yourself or someone else forward. Season 2 is San Francisco and the Bay Area through mid-December 2026.";
+
+const platformBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full border border-white/20 hover:bg-white/10 transition-colors";
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+---
+
+<BaseLayout title={title} description={description}>
+  <Navbar />
+  <main>
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Be a guest</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          Come on the show
+        </h1>
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          The Trades Show records with one working artisan at a time, in their own workshop.
+          If you make things by hand for a living in the Bay Area, this page tells you
+          whether you are a fit and exactly what a taping day involves, so you can decide
+          before you write.
+        </p>
+        <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 mt-8">
+          <a href={applyMailto} class={platformBtn}>Put yourself forward</a>
+          <a href={suggestMailto} class={platformBtn}>Suggest someone else</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Who the show looks for. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Who we look for</p>
+        <h2 class="font-extrabold text-2xl mb-8">Four things, and only four</h2>
+        <div class="space-y-10">
+          {LOOKING_FOR.map((item) => (
+            <div>
+              <h3 class="font-bold text-lg mb-3">{item.title}</h3>
+              <p class="text-base md:text-lg text-black/80 leading-relaxed">{item.body}</p>
+            </div>
+          ))}
+        </div>
+        <p class="text-base md:text-lg text-black/80 leading-relaxed mt-10">
+          Notably absent from that list: how many followers you have, how long you have been
+          at it, and whether you are good at talking about your work. The last one is
+          Briana's job, not yours.
+        </p>
+      </div>
+    </section>
+
+    <!-- What taping involves. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">What it involves</p>
+        <h2 class="font-extrabold text-2xl mb-8">A call, a day, and the footage after</h2>
+        <div class="space-y-10">
+          {PROCESS.map((item, i) => (
+            <div>
+              <span class="text-black/50 font-bold text-xs uppercase tracking-widest">
+                Step {i + 1}
+              </span>
+              <h3 class="font-bold text-lg mt-2 mb-3">{item.step}</h3>
+              <p class="text-base md:text-lg text-black/80 leading-relaxed">{item.body}</p>
+            </div>
+          ))}
+        </div>
+        <!-- Derived, not typed: /press states the same run-time range from the
+             same durations, and the plan's verification step for these landing
+             pages is that their numbers agree. A hand-written "forty-five
+             minutes to an hour" here was already half an episode out of date. -->
+        <p class="text-base md:text-lg text-black/80 leading-relaxed mt-10">
+          Episodes run about {runLow} to {runHigh} minutes. There is no fee to appear and no
+          fee to be booked, in either direction.
+        </p>
+      </div>
+    </section>
+
+    <!-- What it sounds like, then the ask. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Before you write</p>
+          <h2 class="font-extrabold text-2xl mb-4">Listen to one first</h2>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed mb-8">
+            The most useful thing you can do is watch an episode and see whether the
+            conversation is the one you want to have. The most recent one is
+            "{latest.data.title}". The Bay Area guide is a faster way to see who has already
+            done this and what came of it.
+          </p>
+          <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+            <a href={episodePath(latest.data.slug)} class={creamBtn}>Watch the latest episode</a>
+            <a href={BAY_AREA_ROUNDUP_PATH} class={linkPill}>Bay Area artisans guide</a>
+            <a href={GUESTS_PATH} class={linkPill}>All guests</a>
+          </div>
+
+          <div class="mt-10 pt-8 border-t border-black/10">
+            <h3 class="font-bold text-lg mb-4">Then write</h3>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed mb-6">
+              One email is enough. Tell us what you make, where the shop is, and a link to
+              the work, whether that is a website, an Instagram account, or photos on your
+              phone. Briana reads every one of these herself, and answers the ones that fit.
+            </p>
+            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+              <a href={applyMailto} class={creamBtn}>Email about being a guest</a>
+              <a href={suggestMailto} class={linkPill}>Suggest a maker</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

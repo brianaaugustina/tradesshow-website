@@ -1,3 +1,41 @@
+/** Character budget for a card description. Was a flat `.substring(0, 400)`. */
+export const DESCRIPTION_LIMIT = 400;
+
+/**
+ * Truncate at a sentence boundary, not mid-word (T7).
+ *
+ * A flat substring produced live copy like "…gathering leaves and gra". Cut at
+ * the last `.`/`!`/`?` inside the budget; if that would throw away more than
+ * half the allowance (a feed item with one very long opening sentence), fall
+ * back to the last whole word plus an ellipsis.
+ *
+ * MIRRORED in NowPlaying.astro's `<script>` — the live RSS refresh re-derives
+ * descriptions in the browser. Change both or the text visibly shifts a second
+ * after load.
+ */
+export function truncateAtSentence(text: string, limit = DESCRIPTION_LIMIT): string {
+  const clean = text.trim();
+  if (clean.length <= limit) return clean;
+
+  const head = clean.slice(0, limit);
+  const lastSentenceEnd = Math.max(
+    head.lastIndexOf("."),
+    head.lastIndexOf("!"),
+    head.lastIndexOf("?")
+  );
+  if (lastSentenceEnd >= limit / 2) {
+    return head.slice(0, lastSentenceEnd + 1).trim();
+  }
+
+  const lastSpace = head.lastIndexOf(" ");
+  const words = (lastSpace > 0 ? head.slice(0, lastSpace) : head)
+    .replace(/[\s,;:—–-]+$/, "")
+    .trim();
+  // Don't stack an ellipsis on a full stop ("Ok.…") when the only sentence
+  // break sat right at the start of a long unpunctuated blurb.
+  return /[.!?]$/.test(words) ? words : words + "…";
+}
+
 export interface Episode {
   number: number | null;
   title: string;
@@ -37,9 +75,9 @@ export async function fetchEpisodes(limit = 5): Promise<Episode[]> {
           .replace(/&apos;/g, "'");
 
       const title = decodeEntities(rawTitle);
-      const description = decodeEntities(
-        rawDesc.replace(/<[^>]*>/g, "")
-      ).substring(0, 400);
+      const description = truncateAtSentence(
+        decodeEntities(rawDesc.replace(/<[^>]*>/g, ""))
+      );
 
       // Try to get episode artwork, fall back to channel artwork
       const imageMatch = item.match(/<itunes:image\s+href="([^"]+)"/);

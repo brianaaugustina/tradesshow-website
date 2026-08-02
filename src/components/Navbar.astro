@@ -1,10 +1,52 @@
 ---
+/**
+ * Shared nav.
+ *
+ * ⚠️ THE LINK SET CHANGED IN PHASE 4 (plan §4.2 / T12) AND NEEDS SIGN-OFF.
+ * This is the ONE visible change to existing UI in the whole SEO plan, which is
+ * why the plan gates it on Decision 2 ("approve the exact new nav link set +
+ * placement"). Three internal routes were added — Episodes · Guests · Press —
+ * ahead of the two links that were already here, so the existing pair keeps its
+ * order and its position on the right. To revert, delete the three <a> elements
+ * from `INTERNAL_LINKS` below; nothing else in this file depends on them.
+ *
+ * NOTHING WAS RESTYLED. The new links reuse the existing link classes verbatim
+ * in both the desktop row and the mobile drawer — same size, same weight, same
+ * hover, same `gap-8` / `py-4` rhythm. The only reason the markup below is a
+ * loop rather than three more hand-written anchors is that the desktop row and
+ * the drawer must never drift apart.
+ *
+ * /partner and /be-a-guest are deliberately NOT in the nav: they are reached
+ * from the footer's Contact block, which is where somebody looking for them
+ * already goes, and a five-item nav is the most this bar holds at `md` without
+ * the wordmark and the links colliding.
+ *
+ * Two things vary off the homepage, both no-ops on `/` (its rendered markup is
+ * unchanged apart from the three added links):
+ *  - "Home" and the wordmark point at `#top`, an anchor that only exists on the
+ *    homepage's Hero. Off `/` they point at `/`.
+ *  - The bar is transparent until the hero has scrolled past. Pages without a
+ *    hero have cream sections that a white wordmark disappears into, so they
+ *    render it solid from the start via `data-solid`.
+ */
+const isHome = Astro.url.pathname === "/";
+const homeHref = isHome ? "#top" : "/";
 
+/** Added in Phase 4. Order is the plan's: Episodes · Guests · Press. */
+const INTERNAL_LINKS = [
+  { label: "Episodes", href: "/episodes" },
+  { label: "Guests", href: "/guests" },
+  { label: "Press", href: "/press" },
+];
 ---
 
-<nav id="main-nav" class="fixed top-0 left-0 right-0 z-50 transition-colors duration-300">
+<nav
+  id="main-nav"
+  class="fixed top-0 left-0 right-0 z-50 transition-colors duration-300"
+  data-solid={isHome ? undefined : "true"}
+>
   <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-    <a href="#top" class="block">
+    <a href={homeHref} class="block">
       <img
         src="/images/wordmark-white.svg"
         alt="The Trades Show"
@@ -14,6 +56,14 @@
 
     <!-- Desktop nav -->
     <div class="hidden md:flex items-center gap-8">
+      {INTERNAL_LINKS.map((link) => (
+        <a
+          href={link.href}
+          class="text-sm font-normal text-white hover:text-text-light transition-colors"
+        >
+          {link.label}
+        </a>
+      ))}
       <a
         href="https://artisancorral.com"
         target="_blank"
@@ -24,7 +74,7 @@
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
       </a>
       <a
-        href="#top"
+        href={homeHref}
         class="text-sm font-normal text-white hover:text-text-light transition-colors"
       >
         Home
@@ -55,7 +105,7 @@
   <div id="drawer-panel" class="absolute inset-0 bg-[#292725] flex flex-col transition-all duration-300" style="opacity: 0; transform: translateY(-8px);">
     <!-- Top bar with logo + close -->
     <div class="max-w-7xl w-full mx-auto px-6 py-4 flex items-center justify-between">
-      <a href="#top" class="block">
+      <a href={homeHref} class="block">
         <img
           src="/images/wordmark-white.svg"
           alt="The Trades Show"
@@ -70,6 +120,11 @@
     </div>
     <!-- Links -->
     <div class="flex-1 flex flex-col px-8 pt-4 gap-1">
+      {INTERNAL_LINKS.map((link) => (
+        <a href={link.href} class="drawer-link block py-4 text-2xl font-bold text-white">
+          {link.label}
+        </a>
+      ))}
       <a
         href="https://artisancorral.com"
         target="_blank"
@@ -80,7 +135,7 @@
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
       </a>
       <a
-        href="#top"
+        href={homeHref}
         class="drawer-link block py-4 text-2xl font-bold text-white"
       >
         Home
@@ -127,7 +182,9 @@
     if (!nav) return;
     const scrollY = window.scrollY;
     const heroHeight = window.innerHeight * 0.85;
-    if (scrollY > heroHeight || menuOpen) {
+    // `data-solid` is set on every page that has no hero (episode pages, the
+    // archive). The homepage never carries it, so its behaviour is unchanged.
+    if (nav.dataset.solid === "true" || scrollY > heroHeight || menuOpen) {
       nav.style.backgroundColor = "#292725";
     } else {
       nav.style.backgroundColor = "transparent";

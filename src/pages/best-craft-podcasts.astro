@@ -1,0 +1,282 @@
+---
+/**
+ * `/best-craft-podcasts` — "craft and maker podcasts worth your time"
+ * (plan §4.1 / T6, page 2).
+ *
+ * EVERY SHOW BELOW WAS CHECKED BEFORE IT WENT ON THE LIST. On 2026-07-31 each
+ * one's own feed or store listing was pulled and read for a 2026 episode; the
+ * `checked` string on each entry is that episode, and it is the only freshness
+ * claim the page makes. One well-known candidate was cut by exactly this pass —
+ * Axe & Anvil (blacksmith Jordan Goodwin) still ranks on "best craftsman
+ * podcast" listicles published for 2026, and its most recent episode is Episode
+ * 8, from 12 November 2021 (verified on its Apple Podcasts listing). That is the
+ * failure mode this page exists to avoid, and the reason the checking is stated
+ * on the page rather than assumed.
+ *
+ * WHEN YOU REFRESH THIS PAGE, RE-PULL EVERY `checked` STRING. They are dated,
+ * falsifiable claims about somebody else's publishing schedule, and a reader who
+ * spot-checks one is exactly the reader worth keeping. Verified 2026-07-31:
+ * Potters Cast ep. 1247 (21 Jul), Shop Talk Live STL371 (24 Jul, per its Apple
+ * listing), Long Thread / Emily Whitted (25 Jul, per the Fireside feed), Making
+ * It ep. 529 (17 Jul), Trades Show ep. 15 (23 Jul, from our own collection),
+ * Articles of Interest / fit models ("Sizes", 12 Jun per the pubDate on
+ * feed.articlesofinterest.club), Clever ep. 237 (14 Apr, last new
+ * episode) with weekly encores since, Craft Industry Alliance / Michael Blanding
+ * (16 Jul, per the Podbean feed).
+ *
+ * THE TRADES SHOW IS ON THE LIST, IN THE MIDDLE, AND SAYS SO. A roundup that
+ * omits the publisher's own show is coy; one that opens with it is an
+ * advertisement. It sits where it fits the ordering, and its entry names the
+ * conflict in the first clause.
+ *
+ * The plan's secondary reason for this page is reciprocity: shows named in a
+ * roundup tend to name you back. That only works if the entries are useful to
+ * the show being named, which is why each one describes the actual listening
+ * experience rather than a keyword.
+ *
+ * Design: `/best-bay-area-artisans`' page shape with no thumbnails (podcast art
+ * is not ours to host), so the rows carry their own numbered eyebrow instead.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+import { SITE_URL, PODCAST_ID } from "../lib/entity";
+import { EPISODES_PATH } from "../lib/episodes";
+import {
+  roundupGraph,
+  ROUNDUP_UPDATED_LABEL,
+  BAY_AREA_ROUNDUP_PATH,
+} from "../lib/roundups";
+
+interface Show {
+  name: string;
+  /** The show's own home on the web, verified reachable on 2026-07-31. */
+  url: string;
+  /** Host or publisher, as the show itself states it. */
+  host: string;
+  /** One line naming the subject, so the list scans. */
+  subject: string;
+  /** Two or three sentences on what listening to it is actually like. */
+  body: string;
+  /** How often it publishes, per the show's own listing. */
+  cadence: string;
+  /** The 2026 episode that proves it is still running. Verified, not assumed. */
+  checked: string;
+  /** Set on The Trades Show's own row so the page can label it. */
+  ours?: boolean;
+  /** `@id` reference for our own show instead of a fresh node. */
+  id?: string;
+}
+
+/**
+ * Ordered from the most hands-in-the-work shows to the ones that circle craft
+ * from culture and business. Not a ranking, and the lead says so.
+ */
+const SHOWS: Show[] = [
+  {
+    name: "The Potters Cast",
+    url: "https://thepotterscast.com/",
+    host: "Paul Blais",
+    subject: "Ceramics",
+    body:
+      "Twelve hundred–odd interviews with working potters, which is a strange and wonderful thing to have on the internet. Episodes are short and the questions are practical: how the studio pays for itself, what the kiln schedule looks like, what the maker would tell somebody starting now. If you want a sense of how many ways there are to make a living in one trade, start here and pick names at random.",
+    cadence: "Twice a week",
+    checked: "Episode 1247 landed 21 July 2026",
+  },
+  {
+    name: "Shop Talk Live",
+    url: "https://www.finewoodworking.com/blog/shop-talk-live",
+    host: "The Fine Woodworking staff",
+    subject: "Woodworking",
+    body:
+      "Fine Woodworking editors answering reader questions, which sounds dry and is not. The value is in hearing experienced woodworkers disagree about grain direction or finishing order and then explain why. It is the closest thing to standing around somebody else's bench while they argue.",
+    cadence: "Every two weeks",
+    checked: "STL371 landed 24 July 2026",
+  },
+  {
+    name: "The Long Thread Podcast",
+    url: "https://longthreadmedia.com/podcast",
+    host: "Anne Merrow and Linda Ligon",
+    subject: "Weaving, spinning, and needlework",
+    body:
+      "Long interviews with spinners, weavers, dyers and textile historians, from the team behind Handwoven and Spin Off. The episodes take their time, and the history ones are worth it even if you have never touched a loom.",
+    cadence: "Weekly to every other week",
+    checked: "An episode with textile historian Emily Whitted landed 25 July 2026",
+  },
+  {
+    name: "Making It",
+    url: "https://iliketomakestuff.com/series/making-it-podcast/",
+    host: "Jimmy DiResta, Bob Clagett, and David Picciuto",
+    subject: "Making things, broadly",
+    body:
+      "Three makers with three different businesses talking through the week. Less instruction than the others on this list and more of the running conversation behind a shop: what sold, what failed, what tool was a mistake, whether the whole thing is worth doing. Five hundred–plus episodes deep and still going.",
+    cadence: "Most Fridays",
+    checked:
+      "Episode 529 landed 17 July 2026, ending the longest break the hosts have taken",
+  },
+  {
+    name: "The Trades Show",
+    url: `${SITE_URL}/`,
+    host: "Briana Ottoboni",
+    subject: "Artisans in their own workshops",
+    body:
+      "Ours, so weigh it accordingly. Each episode is recorded on location in one artisan's shop: a blacksmith, an ornamental plasterer, a bootmaker, a butcher, a florist. The questions are about the craft and the business under it, including the parts that are hard to say out loud, like what handmade work should cost and who is going to do it next. Season 2 is set in San Francisco.",
+    cadence: "Every other week through mid-December 2026",
+    checked: "Episode 15 landed 23 July 2026",
+    ours: true,
+    id: PODCAST_ID,
+  },
+  {
+    name: "Articles of Interest",
+    url: "https://www.radiotopia.fm/podcasts/articles-of-interest",
+    host: "Avery Trufelman",
+    subject: "The social history of what we wear",
+    body:
+      "Narrative documentary rather than interview, released in seasons that each take one idea apart, with standalone episodes in between. It is the best argument on this list for why an object's history is part of the object. If you make anything anyone wears, the seasons on preppy clothing and on outdoor gear will change how you talk about your own work.",
+    cadence: "In seasons, with standalone episodes between them",
+    checked: "An episode on the working life of a fit model landed 12 June 2026",
+  },
+  {
+    name: "Clever",
+    url: "https://www.cleverpodcast.com/",
+    host: "Amy Devers",
+    subject: "Designers and makers, one long conversation at a time",
+    body:
+      "Devers is a furniture maker herself, and it shows in what she asks. The episodes go into how somebody arrived at the work rather than what they have made lately, which makes it the closest neighbour on this list to what we try to do. It is ten years old this year and spending the summer replaying its own back catalogue, so start with the encores and work outward.",
+    cadence: "Weekly, currently running tenth-anniversary encores",
+    checked:
+      "the most recent new episode is 237, from 14 April 2026, and weekly encores have run since, most recently 28 July 2026",
+  },
+  {
+    name: "Craft Industry Alliance",
+    url: "https://craftindustryalliance.org/podcast/",
+    host: "Abby Glassenberg",
+    subject: "The business of craft",
+    body:
+      "The one to listen to when the question is money. Glassenberg interviews shop owners, designers and executives about margins, wholesale, hiring and what is actually happening to the craft market. Unglamorous and specific, which is the point.",
+    cadence: "Every two to four weeks",
+    checked: "An episode with author Michael Blanding landed 16 July 2026",
+  },
+];
+
+const title = `Craft and Maker Podcasts Worth Your Time (${ROUNDUP_UPDATED_LABEL}) | The Trades Show`;
+const description = `${SHOWS.length} podcasts about craft and the people who make things by hand — ceramics, woodworking, textiles, clothing, design and the business of craft. Every show on the list was checked for a 2026 episode. Updated ${ROUNDUP_UPDATED_LABEL}.`;
+
+const jsonLd = roundupGraph({
+  path: "/best-craft-podcasts",
+  headline: "Craft and maker podcasts worth your time",
+  description,
+  listName: "Craft and maker podcasts worth your time",
+  items: SHOWS.map((show) =>
+    // Our own show is the `@id` the base graph already defines, not a second
+    // PodcastSeries node describing the same thing.
+    show.id
+      ? { "@type": "PodcastSeries", "@id": show.id }
+      : {
+          "@type": "PodcastSeries",
+          name: show.name,
+          url: show.url,
+          description: show.subject,
+          author: { "@type": "Person", name: show.host },
+        },
+  ),
+});
+
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+const externalArrow =
+  '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>';
+---
+
+<BaseLayout title={title} description={description} jsonLd={jsonLd}>
+  <Navbar />
+  <main>
+    <!-- Definitional lead, in the first 30% of the page, in plain text. -->
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Listening guide</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          Craft and maker podcasts worth your time
+        </h1>
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          {SHOWS.length} shows about craft and the people who do it for a living, covering
+          ceramics, woodworking, textiles, clothing, design and the business side of all of
+          it. Craft podcast lists go stale faster than almost any other kind, so every show
+          here was opened and checked for a 2026 episode before it went on the page, and the
+          episode we found is named in its entry. One well-known show was cut for exactly
+          that reason. The order runs from the most hands-in-the-work shows to the ones that
+          come at craft from culture and business. It is not a ranking.
+        </p>
+        <p class="text-white/60 text-sm mt-4">
+          Updated {ROUNDUP_UPDATED_LABEL} · Next review October 2026
+        </p>
+      </div>
+    </section>
+
+    <!-- The list. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="space-y-14">
+          {SHOWS.map((show, i) => (
+            <div>
+              <span class="text-black/50 font-bold text-xs uppercase tracking-widest">
+                {i + 1} · {show.subject}
+              </span>
+              <h2 class="font-extrabold text-2xl mt-2 leading-tight">
+                <a
+                  href={show.url}
+                  target={show.ours ? undefined : "_blank"}
+                  rel={show.ours ? undefined : "noopener noreferrer"}
+                  class="hover:text-red transition-colors"
+                >
+                  {show.name}
+                </a>
+              </h2>
+              <p class="text-black/60 text-sm mt-1">
+                {show.host} · {show.cadence}
+              </p>
+              <p class="text-base md:text-lg text-black/80 leading-relaxed mt-4">{show.body}</p>
+              <p class="text-black/50 text-sm mt-4">Checked {ROUNDUP_UPDATED_LABEL}: {show.checked}.</p>
+              <div class="flex flex-wrap gap-3 mt-6">
+                {show.ours ? (
+                  <a href={EPISODES_PATH} class={linkPill}>All episodes</a>
+                ) : (
+                  <a href={show.url} target="_blank" rel="noopener noreferrer" class={linkPill}>
+                    Listen
+                    <Fragment set:html={externalArrow} />
+                  </a>
+                )}
+              </div>
+              <hr class="border-black/10 mt-14" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- How the list was built + where to go next. -->
+    <section class="bg-cream pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">How this list is made</p>
+          <h2 class="font-extrabold text-2xl mb-4">Checked, not collected</h2>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Nobody paid to be here and nobody was asked in advance. The test was simple: does
+            the show treat craft as work rather than as decoration, and did it publish
+            something this year. We re-run that check quarterly, and a show that goes quiet
+            comes off the list rather than sitting here collecting clicks. If you make a show
+            that belongs on it, tell us.
+          </p>
+          <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 mt-8">
+            <a href="/press" class={creamBtn}>Get in touch</a>
+            <a href={BAY_AREA_ROUNDUP_PATH} class={linkPill}>Bay Area artisans guide</a>
+            <a href={EPISODES_PATH} class={linkPill}>All episodes</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

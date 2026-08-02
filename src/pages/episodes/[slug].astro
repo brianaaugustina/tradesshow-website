@@ -1,0 +1,360 @@
+---
+/**
+ * One episode page — plan §2.5.
+ *
+ * Built ENTIRELY from index.astro's pattern library: the charcoal section and
+ * `1fr 180px 1fr`-era rhythm of NowPlaying, the cream sections of Manifesto,
+ * the `bg-card-beige rounded-3xl` card of MeetTheHost, the red eyebrow
+ * (`text-red font-bold text-sm uppercase tracking-widest`), the
+ * `font-extrabold text-2xl` heading, and the existing pill buttons. No new
+ * palette, type scale, or component vocabulary.
+ *
+ * Content order is the plan's, top → bottom, so the entity signals and the
+ * quotable material sit in the first 30% of the page:
+ *   1. header (eyebrow · H1 · the summary ¶ naming guest, trade and city)
+ *   2. embedded video
+ *   3. listen buttons
+ *   4. pull-quotes        — rendered only when the frontmatter has real ones
+ *   5. show notes body    — the published notes, verbatim from the Content DB
+ *   6. timestamped chapters
+ *   7. guest links + the Corral cross-link
+ *   8. transcript, when one exists (it is part of the Markdown body)
+ *
+ * Sections 4 and 8 are CONDITIONAL BY DESIGN. An episode with no cleaned
+ * transcript ships without quotes and without a transcript rather than with
+ * invented ones — see the TODO(BRIANA) notes in the collection files.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+import { render } from "astro:content";
+import {
+  getEpisodesNewestFirst,
+  episodeJsonLd,
+  episodePath,
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
+  formatEpisodeDate,
+  humanDuration,
+  episodeHeadline,
+  EPISODES_PATH,
+  guestPath,
+  type EpisodeEntry,
+} from "../../lib/episodes";
+
+export async function getStaticPaths() {
+  const episodes = await getEpisodesNewestFirst();
+  return episodes.map((entry, i) => ({
+    params: { slug: entry.data.slug },
+    props: {
+      entry,
+      // Newest-first order, so the *next* entry in the array is the older one.
+      newer: episodes[i - 1] ?? null,
+      older: episodes[i + 1] ?? null,
+    },
+  }));
+}
+
+interface Props {
+  entry: EpisodeEntry;
+  newer: EpisodeEntry | null;
+  older: EpisodeEntry | null;
+}
+
+const { entry, newer, older } = Astro.props;
+const ep = entry.data;
+const { Content } = await render(entry);
+
+const headline = episodeHeadline(ep);
+const headTitle = `${ep.seoTitle ?? headline} | The Trades Show`;
+const eyebrow = [`Episode ${ep.episodeNumber}`, `Season ${ep.season}`, ep.city].join(" · ");
+const watchUrl = youtubeWatchUrl(ep.youtubeVideoId);
+
+/**
+ * "14:32" / "1:02:18" → 872 / 3738, so a chapter can deep-link into the video
+ * it was written against. Derived arithmetic on a published timestamp — no new
+ * claim is being made about the episode.
+ */
+function timeToSeconds(t: string): number | null {
+  const parts = t.split(":").map((p) => Number(p));
+  if (parts.some((n) => !Number.isFinite(n))) return null;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return null;
+}
+function chapterUrl(time: string): string {
+  const seconds = timeToSeconds(time);
+  return seconds == null ? watchUrl : `${watchUrl}&t=${seconds}s`;
+}
+
+// Same pill as the homepage's platform row (NowPlaying) — one string so the two
+// cannot drift.
+const platformBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full border border-white/20 hover:bg-white/10 transition-colors";
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+---
+
+<BaseLayout
+  title={headTitle}
+  description={ep.summary}
+  image={ep.thumbnail}
+  jsonLd={episodeJsonLd(ep)}
+>
+  <Navbar />
+  <main>
+    <!-- 1–3. Header, video, listen buttons -->
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">{eyebrow}</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          {headline}
+        </h1>
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          {ep.summary}
+        </p>
+        <p class="text-white/60 text-sm mt-4">
+          {formatEpisodeDate(ep.pubDate)} · {humanDuration(ep.duration)}
+        </p>
+
+        <!-- Video: the strongest AI-visibility asset, tied to its text (T5). -->
+        <div class="mt-10 rounded-lg overflow-hidden border border-white/20 bg-black">
+          <iframe
+            src={youtubeEmbedUrl(ep.youtubeVideoId)}
+            title={`${headline} — The Trades Show`}
+            class="w-full aspect-video block"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-4 mt-8">
+          <a href={ep.spotifyEpisodeUrl} target="_blank" rel="noopener noreferrer" class={platformBtn}>
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#1DB954" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Listen on Spotify
+          </a>
+          {ep.applePodcastsUrl && (
+            <a href={ep.applePodcastsUrl} target="_blank" rel="noopener noreferrer" class={platformBtn}>
+              <svg class="w-5 h-5" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="ap-grad-ep" x1="25" y1="50" x2="25" y2="0" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#822CBE"/>
+                    <stop offset="1" stop-color="#D56DFB"/>
+                  </linearGradient>
+                </defs>
+                <rect width="50" height="50" rx="11" fill="url(#ap-grad-ep)"/>
+                <g fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                  <path d="M15.5 30.5a12 12 0 1 1 19 0"/>
+                  <path d="M18.5 28.5a8.5 8.5 0 1 1 13 0"/>
+                </g>
+                <circle cx="25" cy="25" r="2.5" fill="white"/>
+                <path d="M22.5 33c-.3 2.5-.8 5.5-1 6.5-.2 1.2.8 2 1.8 2h3.4c1 0 2-.8 1.8-2-.2-1-.7-4-1-6.5a1.5 1.5 0 0 0-1.5-1.3h-2a1.5 1.5 0 0 0-1.5 1.3z" fill="white"/>
+              </svg>
+              Apple Podcasts
+            </a>
+          )}
+          <a href={watchUrl} target="_blank" rel="noopener noreferrer" class={platformBtn}>
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+              <path fill="white" d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            Watch on YouTube
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Pull-quotes — only when the frontmatter carries real, verbatim ones. -->
+    {ep.pullQuotes.length > 0 && (
+      <section class="bg-cream py-20 md:py-28">
+        <div class="max-w-4xl mx-auto px-6 fade-in">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-8">In their words</p>
+          <div class="space-y-12">
+            {ep.pullQuotes.map((q) => (
+              <blockquote>
+                <p class="font-extrabold text-2xl leading-tight">“{q.quote}”</p>
+                <footer class="text-black/60 text-sm mt-4">
+                  — {ep.guest}{q.timestamp && <span> · {q.timestamp}</span>}
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- 5 + 8. Published show notes, and the transcript when the file carries one. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="episode-prose">
+          <Content />
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Timestamped chapters, verbatim from the published show notes. -->
+    {ep.chapters.length > 0 && (
+      <section class="bg-cream pt-10 md:pt-14 pb-20 md:pb-28">
+        <div class="max-w-4xl mx-auto px-6 fade-in">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Chapters</p>
+          <h2 class="font-extrabold text-2xl mb-8">What's in this episode</h2>
+          <ul class="space-y-3">
+            {ep.chapters.map((c) => (
+              <li class="flex gap-4 items-baseline">
+                <a
+                  href={chapterUrl(c.time)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-bold text-sm tabular-nums text-black/60 hover:text-red transition-colors shrink-0 w-16"
+                >
+                  {c.time}
+                </a>
+                <span class="text-base text-black/80 leading-relaxed">{c.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+
+    <!-- 7. Guest links + the cross-venture bridge to The Corral. -->
+    <section class="bg-cream pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">
+            {ep.soloEpisode ? "Meet the host" : "Meet the guest"}
+          </p>
+          <h2 class="font-extrabold text-2xl mb-4">{ep.guest}</h2>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            {ep.soloEpisode
+              ? `${ep.guest} is the host and creator of The Trades Show, based in ${ep.city}.`
+              : `${ep.guest} is ${/^[aeiou]/i.test(ep.trade) ? "an" : "a"} ${ep.trade.toLowerCase()} in ${ep.city}.`}
+          </p>
+          {(ep.guestLinks.length > 0 || !ep.soloEpisode) && (
+            <div class="flex flex-wrap gap-3 mt-8">
+              {/* The other half of T4's link graph: every episode page reaches its
+                  guest's page, and every guest page reaches back here. */}
+              {!ep.soloEpisode && (
+                <a href={guestPath(ep.guestSlug)} class={linkPill}>
+                  More about {ep.guest}
+                </a>
+              )}
+              {ep.guestLinks.map((l) => (
+                <a href={l.url} target="_blank" rel="noopener noreferrer" class={linkPill}>
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          )}
+          {(ep.corralTradeUrl || ep.corralArtisanUrl) && (
+            <div class="mt-10 pt-8 border-t border-black/10">
+              <p class="text-base text-black/80 leading-relaxed mb-6">
+                {ep.corralArtisanUrl
+                  ? `${ep.guest} is also on The Corral, the national jobs board for artisans and the shops that hire them.`
+                  : "Looking for work in the artisan trades? The Corral is the national jobs board for artisans and the shops that hire them."}
+              </p>
+              <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+                {ep.corralArtisanUrl && (
+                  <a href={ep.corralArtisanUrl} target="_blank" rel="noopener noreferrer" class={creamBtn}>
+                    {ep.guest} on The Corral
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+                  </a>
+                )}
+                {ep.corralTradeUrl && (
+                  <a
+                    href={ep.corralTradeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class={ep.corralArtisanUrl ? linkPill : creamBtn}
+                  >
+                    {ep.soloEpisode ? "Browse artisan jobs" : `Browse ${ep.trade.toLowerCase()} jobs`}
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <!-- Archive + neighbours: the internal link graph the episode sits in. -->
+        <div class="mt-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <a href={EPISODES_PATH} class={creamBtn}>All episodes</a>
+          <div class="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
+            {older && (
+              <a href={episodePath(older.data.slug)} class="text-black/60 hover:text-black transition-colors">
+                ← Episode {older.data.episodeNumber}: {older.data.guest}
+              </a>
+            )}
+            {newer && (
+              <a href={episodePath(newer.data.slug)} class="text-black/60 hover:text-black transition-colors">
+                Episode {newer.data.episodeNumber}: {newer.data.guest} →
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style is:global>
+  /* Markdown body styling. `is:global` because <Content /> renders outside this
+     component's scope; every selector is namespaced under .episode-prose, which
+     exists only on episode pages. Values are the site's existing type scale —
+     nothing new is introduced here. */
+  .episode-prose h2 {
+    font-weight: 800;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    margin-bottom: 1.5rem;
+  }
+  .episode-prose h2:not(:first-child) {
+    margin-top: 3rem;
+  }
+  .episode-prose h3 {
+    font-weight: 700;
+    font-size: 1.125rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .episode-prose p {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: rgb(0 0 0 / 0.8);
+    margin-bottom: 1.25rem;
+  }
+  .episode-prose ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .episode-prose li {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: rgb(0 0 0 / 0.8);
+    margin-bottom: 0.5rem;
+  }
+  .episode-prose strong {
+    font-weight: 700;
+  }
+  .episode-prose em {
+    font-style: italic;
+  }
+  .episode-prose a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  @media (min-width: 768px) {
+    .episode-prose p,
+    .episode-prose li {
+      font-size: 1.125rem;
+    }
+  }
+</style>

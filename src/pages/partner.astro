@@ -1,0 +1,284 @@
+---
+/**
+ * `/partner` — the season-sponsorship surface (plan §4.2 / T12).
+ *
+ * NO PRICES ON THIS PAGE, ON PURPOSE, AND NOT ONLY BECAUSE THE BRIEF SAYS SO.
+ * The show's own pricing note is explicit that the number only reads as fair
+ * once the TERM is on the table ($1K priced against one episode's downloads
+ * looks 15–25× over market; the same $1K priced against a season's full
+ * cross-channel delivery is ordinary). A page cannot put the term on the table
+ * before it states the number, so it states neither and sells the shape of the
+ * thing instead. The number belongs in the reply, where the season length and
+ * the buyer's lane are already known.
+ *
+ * NUMBERS, AGAIN. Same rule as /press: Decision 7 (exact audience figures) is
+ * open, so the audience is described rather than counted, and the one slot where
+ * a figure belongs is marked with a TODO(BRIANA) comment in this file. The
+ * plan's verification step is "numbers on /press match /partner" — the way they
+ * are kept in agreement today is that neither page has any. When the figures
+ * land, fill BOTH slots in the same change.
+ *
+ * The three lanes below are the H2 consolidated offer: one product, three
+ * buyers. They are described by who they suit rather than by what they cost,
+ * which is also how they differ — the national lane and the local lane buy the
+ * same season, they just have different reasons and different budgets.
+ *
+ * Deliberately ABSENT: deal mechanics (hybrids, performance terms, ladders).
+ * Those exist, and they are negotiation, not a menu.
+ *
+ * Design is the episode/guest pattern library, unchanged.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+import { getEpisodesNewestFirst, episodePath, EPISODES_PATH } from "../lib/episodes";
+import { BAY_AREA_ROUNDUP_PATH } from "../lib/roundups";
+
+const episodes = await getEpisodesNewestFirst();
+const latest = episodes[0];
+
+const EMAIL = "briana@thetradesshowpod.com";
+const partnerMailto = `mailto:${EMAIL}?subject=Season%20Partnership%20%E2%80%94%20The%20Trades%20Show`;
+
+/**
+ * One product, three buyers. Each entry says who it suits and what it is for;
+ * none of them says what it costs.
+ */
+const LANES = [
+  {
+    name: "National founding partner",
+    who: "A brand that sells to makers, or makes things the way our guests do",
+    body:
+      "For companies whose customers are already the people who watch this show: tools, materials, workwear, supplies, goods made by hand at scale. The founding rate is exactly what it sounds like — the price of coming in before the audience is priced on, held for the partners who come in early. It goes up as the show grows, and it does not go up for anyone already in.",
+  },
+  {
+    name: "San Francisco season partner",
+    who: "A Bay Area business with a stake in the city's craft economy",
+    body:
+      "Season 2 is set in San Francisco through mid-December 2026. This lane is for the shops, studios, restaurants, galleries and local brands who benefit directly from more people knowing that this work is still being done here, by name, a few miles from them. Terms are deliberately open, because a neighbourhood business and a national brand should not be handed the same rate card.",
+  },
+  {
+    name: "Workforce and CSR",
+    who: "An organization whose mission is skilled work, training, or the trades",
+    body:
+      "For employers, trade programs, unions and foundations working on the same problem the show is about: who does this work next, and who teaches them. These are relationship deals rather than ad buys, and they usually start with a conversation about what you are trying to change rather than about the show.",
+  },
+];
+
+/** What a partner is actually attached to. Only surfaces the show already runs. */
+const SURFACES = [
+  {
+    title: "The episodes themselves",
+    body:
+      "Full conversations publish on YouTube, Spotify and Apple Podcasts. A season partner is read into them by the host, in her voice, not in a produced spot dropped over the top.",
+  },
+  {
+    title: "The clips, which are where the reach is",
+    body:
+      "Every episode produces short vertical cuts for Instagram and TikTok. These travel much further than the full episodes do, and they are the reason this is priced as a video partnership rather than a podcast one.",
+  },
+  {
+    title: "The episode page and the show notes",
+    body:
+      "Every episode has a permanent page on this site with its notes, chapters and links, and the show notes go out on YouTube, Spotify and the newsletter. A partner is named in that block for as long as the episode exists.",
+  },
+  {
+    title: "The work itself, where the fit is real",
+    body:
+      "If a partner makes something a guest would genuinely use, the honest version of that is the guest using it on camera. This is worth asking about and it is not something we will fake — it depends entirely on the guest and the trade.",
+  },
+];
+
+/** The fit filter, stated plainly so the wrong enquiries never get written. */
+const FIT = [
+  "You make or sell something real. Tools, materials, garments, food, goods. Not a funnel.",
+  "Your customers would be glad to find this show, and our audience would be glad to find you. Both directions have to be true.",
+  "You are buying a season, not a slot. A single-episode ad is not something the show sells, at any price.",
+  "You can live with editorial independence. Partners never see a guest list in advance, never approve a cut, and never get an episode built around them.",
+];
+
+const title = "Partner with The Trades Show | Season Sponsorship";
+const description =
+  "The Trades Show sells one thing: a season-long partnership across the full show — episodes, clips, show notes and newsletter. Three ways in, for national brands, Bay Area businesses, and workforce organizations. Season 2 runs through mid-December 2026.";
+
+const platformBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full border border-white/20 hover:bg-white/10 transition-colors";
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+---
+
+<BaseLayout title={title} description={description}>
+  <Navbar />
+  <main>
+    <!-- What is for sale, in plain text, above everything else. -->
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Partner</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          Sponsor a season
+        </h1>
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          The Trades Show sells one thing: a partnership that runs across a whole season, on
+          every surface the show publishes to. Not a mid-roll, not a slot, not a package of
+          impressions. Season 2 is set in San Francisco and runs through mid-December 2026,
+          and there is room for a small number of partners in it.
+        </p>
+        <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 mt-8">
+          <a href={partnerMailto} class={platformBtn}>Start a conversation</a>
+          <a href={episodePath(latest.data.slug)} class={platformBtn}>Watch an episode first</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why a season and not an episode. This is the argument, so it goes first. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">The offer</p>
+        <h2 class="font-extrabold text-2xl mb-6">One thing to buy, and it lasts a season</h2>
+        <div class="space-y-5">
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Most shows sell you an episode. That works when the whole audience arrives at
+            once, on the day, through one feed. This one does not work that way. An episode
+            here keeps finding people for months, through clips, through search, and through
+            the guest's own audience, and almost all of that happens after the week it
+            published.
+          </p>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            So the unit is the season. A partner is named across every episode in it, on the
+            video, in the audio, in the show notes and on the episode pages, and stays named
+            in all of them permanently. Buying one episode of this show would be buying the
+            smallest and least interesting part of what it does, which is why it is not for
+            sale.
+          </p>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Rates depend on the lane and the length of the term, and they come back the same
+            week you ask. There is no rate card on this page because a number without a term
+            attached tells you nothing useful about whether this is worth doing.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Three lanes. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Three ways in</p>
+        <h2 class="font-extrabold text-2xl mb-8">Same season, different reasons</h2>
+        <div class="space-y-10">
+          {LANES.map((lane) => (
+            <div>
+              <h3 class="font-bold text-lg mb-1">{lane.name}</h3>
+              <p class="text-black/50 font-bold text-xs uppercase tracking-widest mb-3">
+                {lane.who}
+              </p>
+              <p class="text-base md:text-lg text-black/80 leading-relaxed">{lane.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- What a partner is attached to. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">What you get</p>
+        <h2 class="font-extrabold text-2xl mb-8">Four places your name goes</h2>
+        <div class="space-y-10">
+          {SURFACES.map((surface) => (
+            <div>
+              <h3 class="font-bold text-lg mb-3">{surface.title}</h3>
+              <p class="text-base md:text-lg text-black/80 leading-relaxed">{surface.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Audience, described rather than counted. Mirror of /press §Audience. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">The audience</p>
+        <h2 class="font-extrabold text-2xl mb-6">Small, specific, and in the room</h2>
+        <div class="space-y-5">
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            This is not a big show and it does not pretend to be. It is a video-first,
+            social-led audience of makers and tradespeople, people seriously considering a
+            trade as a second career, and design-literate viewers in the Bay Area who buy
+            handmade work. Instagram and YouTube carry most of it. The podcast feeds are the
+            smallest channel, not the largest, and a sponsor sizing this show on download
+            counts is reading the wrong number.
+          </p>
+          {/*
+            TODO(BRIANA): Decision 7 — the exact figures go HERE, as one short
+            paragraph, and the IDENTICAL paragraph goes in the matching slot on
+            /press. The plan's verification step for this pair is literally
+            "numbers on /press match /partner", so write them once and paste, in
+            the same change. Convention (reference_tts_audience_metrics):
+            per-channel monthly reach for Instagram / YouTube / TikTok /
+            newsletter, each labelled with the month it was measured. Do NOT
+            publish the "500k+ lifetime social views" aggregate here — it is a
+            vanity figure driven by one video, and it is the exact framing that
+            makes a sophisticated buyer stop trusting the rest of the page.
+          */}
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Reach varies a lot by episode, because guests bring their own following with
+            them, and some of them bring a large one. That is the real mechanic of this show:
+            a partner is not renting our audience so much as being introduced by a working
+            artisan to theirs.
+          </p>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Current per-channel figures, and the numbers on any individual episode, come back
+            the same week you ask for them.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fit filter, then the ask. -->
+    <section class="bg-cream pt-10 md:pt-14 pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Whether it fits</p>
+          <h2 class="font-extrabold text-2xl mb-4">Four things that have to be true</h2>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed mb-8">
+            The show turns down more partnerships than it takes, and always for the same
+            reason: the audience can tell. So the filter is worth stating before you write.
+          </p>
+          <ul class="space-y-4">
+            {FIT.map((item) => (
+              <li class="text-base md:text-lg text-black/80 leading-relaxed">{item}</li>
+            ))}
+          </ul>
+
+          <div class="mt-10 pt-8 border-t border-black/10">
+            <h3 class="font-bold text-lg mb-4">Look at the work first</h3>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed mb-6">
+              An episode will tell you more about whether this is a fit than any deck would.
+              The Bay Area guide is the fastest way to see the range of trades the season
+              covers and the kind of businesses they are.
+            </p>
+            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+              <a href={episodePath(latest.data.slug)} class={creamBtn}>Watch the latest episode</a>
+              <a href={EPISODES_PATH} class={linkPill}>All episodes</a>
+              <a href={BAY_AREA_ROUNDUP_PATH} class={linkPill}>Bay Area artisans guide</a>
+            </div>
+          </div>
+
+          <div class="mt-10 pt-8 border-t border-black/10">
+            <h3 class="font-bold text-lg mb-4">Then write</h3>
+            <p class="text-base md:text-lg text-black/80 leading-relaxed mb-6">
+              Tell us what you make and which of the three lanes sounds like you, and rates,
+              terms and current audience figures come back in one reply. Briana handles these
+              herself, so it is a conversation with the person who makes the show rather than
+              with a sales desk.
+            </p>
+            <a href={partnerMailto} class={creamBtn}>Email about partnering</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

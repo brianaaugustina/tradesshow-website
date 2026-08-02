@@ -1,0 +1,264 @@
+---
+/**
+ * `/best-bay-area-artisans` — the Bay Area makers roundup (plan §4.1 / T6, page 1).
+ *
+ * SCOPED TO HER OWN GUESTS, DELIBERATELY. The plan names the risk out loud:
+ * "editorial claims (who's 'best') — scope to her own guests to stay
+ * defensible." Every maker below sat down with the show in their own shop, so
+ * the page is a record of work that was filmed, not a ranking of a scene nobody
+ * surveyed. That is also why the order is stated (most recent episode first)
+ * rather than implied: an unexplained order in a list like this reads as a
+ * ranking, and there isn't one.
+ *
+ * The list is DERIVED from the episode collection, never retyped. Names,
+ * trades, cities, studios, links and episode art all come from
+ * `src/content/episodes/*.md` by way of `getGuests()`, so a correction to a
+ * frontmatter field lands here in the same build. The only hand-written strings
+ * on the page are the one-line notes below, and each one is condensed from that
+ * episode's own published summary.
+ *
+ * Design is `/guests`' and the guest page's, unchanged: charcoal header with
+ * the red eyebrow, cream body, the `180px 1fr` thumbnail row, existing pills.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+import { guestId } from "../lib/episodes";
+import {
+  getGuests,
+  guestPath,
+  guestAbsoluteUrl,
+  guestSameAs,
+  episodePath,
+  GUESTS_PATH,
+  type Guest,
+} from "../lib/guests";
+import {
+  roundupGraph,
+  ROUNDUP_UPDATED_LABEL,
+  CRAFT_PODCASTS_ROUNDUP_PATH,
+} from "../lib/roundups";
+
+/**
+ * One sentence per maker, condensed from that episode's published summary in
+ * `src/content/episodes/`. Nothing here is a new claim about anyone: if a
+ * detail is not in the show notes, it is not in the sentence. A guest with no
+ * entry still renders — the page falls back to their episode's own summary
+ * rather than dropping them.
+ */
+const NOTES: Record<string, string> = {
+  "lorna-kollmeyer":
+    "Owns the last plaster shop in San Francisco, works out of the Hunters Point Shipyard, and keeps an archive of thousands of salvaged pieces she calls the city's collection rather than her own.",
+  "beatrice-amblard":
+    "Trained four years at Hermès, left in 1988 to build a bespoke practice under her own label, and has taught more than a thousand students in fourteen years.",
+  "amanda-luu":
+    "Came to flowers from economics and marketing by way of an $11-an-hour apprenticeship, and studies Ikenobo Ikebana, the 600-year-old Japanese practice behind her minimalist forms.",
+  "jefferson-mack":
+    "Self-taught, fifty years at the forge, making what he calls antiques from the future. His ironwork ran as a Restoration Hardware spread.",
+  "stuart-brioza":
+    "Started as a dishwasher at fifteen and now runs State Bird Provisions, The Progress, and The Anchovy Bar. He built one of those restaurants by hand.",
+  "sarah-larson":
+    "Builds a scent the way other people build a recipe, moved the business from two retail stores to e-commerce, and is turning her studio into a storefront.",
+  "frank-beneduci":
+    "Grew up in Brockton, Massachusetts, once the shoemaking capital of America, left advertising for the family trade, and now makes shoes and teaches shoemaking in San Francisco.",
+  "marymar-keenan":
+    "Thirty years in clay, a storefront and small-batch production studio in Hayes Valley, and a working rule that a piece isn't finished until somebody uses it.",
+  "ian-james":
+    "Left Parsons, sold on Etsy, opened a San Francisco shop and workshop under his own name, and has since turned the work toward fine art.",
+  "lindsay-knox":
+    "Left corporate retail to carve wax and polish gold by hand in Oakland, making heirloom-inspired pieces and scaling the business slowly on purpose.",
+  "angela-wilson":
+    "Runs the neighborhood butcher shop Avedano's, sources from local farms, uses every part of the animal, and makes the case that paying more and eating less is what preserves a food system.",
+  "luis-pena":
+    "Came to furniture through graphic design and filmmaking, and builds pieces meant to carry a story.",
+};
+
+/**
+ * Bay Area = the California cities in the collection (San Francisco and
+ * Oakland today). Matching on the state suffix rather than a hardcoded city
+ * list means an East Bay or Peninsula guest joins this page automatically the
+ * day their episode file lands; the two New York guests stay out.
+ */
+const guests = (await getGuests()).filter((g) => /,\s*CA$/.test(g.city));
+
+/** Most recent episode first — `getGuests()` already returns them that way. */
+const ordered: Guest[] = guests;
+
+/** Trades named on the page, alphabetical, for the lead sentence. */
+const trades = [...new Set(ordered.map((g) => g.trade.toLowerCase()))].sort();
+
+/** The site link and the Instagram link, split out of the guest's own link list. */
+function siteLink(guest: Guest) {
+  return guest.links.find((l) => !/instagram\.com/.test(l.url));
+}
+function instagramLink(guest: Guest) {
+  return guest.links.find((l) => /instagram\.com/.test(l.url));
+}
+
+const title = `Bay Area Artisans: ${ordered.length} Working Makers, in Their Own Shops | The Trades Show`;
+const description = `A guide to ${ordered.length} working artisans in San Francisco and Oakland — a blacksmith, a plasterer, a bootmaker, a butcher, a florist and more — each recorded on location for The Trades Show. Updated ${ROUNDUP_UPDATED_LABEL}.`;
+
+const jsonLd = roundupGraph({
+  path: "/best-bay-area-artisans",
+  headline: `Bay Area artisans: ${ordered.length} working makers, in their own shops`,
+  description,
+  listName: "Bay Area artisans featured on The Trades Show",
+  // `Person` nodes reusing the SAME `@id` the episode and guest pages already
+  // emit, so this page adds a third mention of one person rather than minting a
+  // thirteenth entity.
+  //
+  // `sameAs` is the same list the guest page emits (`guestSameAs`): the maker's
+  // own site, their Instagram, and — where we have it — their Corral profile.
+  // That last one is the cross-venture bridge this roundup exists to build, so
+  // it has to be in the graph as well as in the pill row below; a Corral link
+  // that appears on the page but not in the schema asks a machine to infer the
+  // connection a human can already see.
+  items: ordered.map((guest) => ({
+    "@type": "Person",
+    "@id": guestId(guest.slug),
+    name: guest.name,
+    url: guestAbsoluteUrl(guest.slug),
+    jobTitle: guest.trade,
+    homeLocation: { "@type": "Place", name: guest.city },
+    sameAs: guestSameAs(guest),
+  })),
+});
+
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+const linkPill =
+  "inline-flex items-center gap-2 bg-white text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full border border-black/10 hover:bg-cream transition-colors";
+---
+
+<BaseLayout title={title} description={description} jsonLd={jsonLd}>
+  <Navbar />
+  <main>
+    <!-- Definitional lead, in the first 30% of the page, in plain text. -->
+    <section class="bg-charcoal pt-28 md:pt-32 pb-16 md:pb-20">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">Bay Area guide</p>
+        <h1 class="font-extrabold text-2xl md:text-3xl text-white leading-tight mb-6">
+          Bay Area artisans: {ordered.length} working makers, in their own shops
+        </h1>
+        <p class="text-text-light text-base md:text-lg leading-relaxed max-w-3xl">
+          These are {ordered.length} artisans in San Francisco and Oakland who make a living
+          from a handmade trade: {trades.slice(0, -1).join(", ")} and {trades.at(-1)}. Every
+          one of them sat down with The Trades Show in their own workshop, so what is written
+          here comes from a conversation on location rather than a directory listing. Each
+          entry links their episode, their page on this site, their own shop, and — where
+          they have one — their profile on The Corral.
+        </p>
+        <p class="text-white/60 text-sm mt-4">
+          Updated {ROUNDUP_UPDATED_LABEL} · Ordered by most recent episode
+        </p>
+      </div>
+    </section>
+
+    <!-- The list. -->
+    <section class="bg-cream pt-20 md:pt-28 pb-10 md:pb-14">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="space-y-14">
+          {ordered.map((guest, i) => {
+            const latest = guest.episodes[0];
+            const site = siteLink(guest);
+            const instagram = instagramLink(guest);
+            return (
+              <div>
+                <div class="md:grid md:grid-cols-[180px_1fr] md:gap-8 md:items-start">
+                  <div>
+                    <img
+                      src={guest.thumbnail}
+                      alt={`${guest.name} on The Trades Show`}
+                      class="w-full aspect-square object-cover object-top border border-black/10 rounded-lg"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="mt-4 md:mt-0">
+                    <span class="text-black/50 font-bold text-xs uppercase tracking-widest">
+                      {i + 1} · {guest.trade} · {guest.city}
+                    </span>
+                    <h2 class="font-extrabold text-2xl mt-2 leading-tight">
+                      <a href={guestPath(guest.slug)} class="hover:text-red transition-colors">
+                        {guest.name}
+                      </a>
+                    </h2>
+                    {guest.studio && (
+                      <p class="text-black/60 text-sm mt-1">{guest.studio}</p>
+                    )}
+                    <p class="text-base md:text-lg text-black/80 leading-relaxed mt-4">
+                      {NOTES[guest.slug] ?? latest.data.summary}
+                    </p>
+                    <div class="flex flex-wrap gap-3 mt-6">
+                      <a href={guestPath(guest.slug)} class={linkPill}>
+                        {guest.name}'s page
+                      </a>
+                      <a href={episodePath(latest.data.slug)} class={linkPill}>
+                        Episode {latest.data.episodeNumber}
+                      </a>
+                      {/*
+                        The cross-venture bridge the plan asks this roundup for:
+                        the maker's own profile on The Corral, where one exists
+                        (10 of the 12 today). Rendered only when the frontmatter
+                        carries a verified URL — a guessed slug would 404 and
+                        cost more than the missing link does.
+                      */}
+                      {guest.corralArtisanUrl && (
+                        <a
+                          href={guest.corralArtisanUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class={linkPill}
+                        >
+                          On The Corral
+                        </a>
+                      )}
+                      {site && (
+                        <a href={site.url} target="_blank" rel="noopener noreferrer" class={linkPill}>
+                          {site.label}
+                        </a>
+                      )}
+                      {instagram && (
+                        <a
+                          href={instagram.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class={linkPill}
+                        >
+                          Instagram
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <hr class="border-black/10 mt-14" />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
+    <!-- How the list was built + where to go next. -->
+    <section class="bg-cream pb-20 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 fade-in">
+        <div class="bg-card-beige rounded-3xl p-8 md:p-14">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">How this list is made</p>
+          <h2 class="font-extrabold text-2xl mb-4">Filmed first, written second</h2>
+          <p class="text-base md:text-lg text-black/80 leading-relaxed">
+            Nobody pays to be on this page. Everyone here was a guest on the show, which
+            means we spent a day in their shop with a camera before a word of this was
+            written. Season 2 is set in San Francisco through the end of 2026, so the list
+            grows with the season. If you know a Bay Area artisan who belongs on it, the
+            fastest way to get them here is to point us at their work.
+          </p>
+          <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 mt-8">
+            <a href="/be-a-guest" class={creamBtn}>Suggest a maker</a>
+            <a href={GUESTS_PATH} class={linkPill}>All guests</a>
+            <a href={CRAFT_PODCASTS_ROUNDUP_PATH} class={linkPill}>Craft podcasts we listen to</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

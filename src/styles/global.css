@@ -6,7 +6,13 @@
 
 @font-face {
   font-family: "Trades Show Round";
-  src: url("/fonts/TradesShowRound-Regular.ttf") format("truetype");
+  /* woff2 first (~44% of the ttf's bytes, and it is in the critical path for
+     the hero headline); the ttf stays as the fallback source for anything that
+     cannot read woff2. Same outlines, same rendered typeface — the woff2 is
+     generated from this exact ttf via fontTools. */
+  src:
+    url("/fonts/TradesShowRound-Regular.woff2") format("woff2"),
+    url("/fonts/TradesShowRound-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -55,4 +61,44 @@ body {
 .fade-in.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* ---------------------------------------------------------------------------
+   Episode cards — breakpoint layout switch (T8)
+
+   Each card used to render twice (a `hidden md:grid` desktop copy and a
+   `md:hidden` mobile copy), so every title and description existed twice in the
+   DOM. It now renders once and the layout switches by breakpoint; the three
+   rules below are what the switch needs beyond Tailwind's own `md:` utilities.
+
+   These live in global.css ON PURPOSE. NowPlaying's live-refresh script
+   re-renders the rows client-side from a string template, and that markup does
+   not carry Astro's scoped-style attribute — anything layout-critical that sat
+   in EpisodeRow.astro's scoped <style> would silently stop applying a second
+   after load. The animation/clamp rules stay scoped exactly as they were.
+
+   `!important` + three-class selectors are deliberate: they have to outrank the
+   scoped `display: block !important` on .episode-listen-btn and
+   .episode-mobile-image regardless of stylesheet order.
+
+   48rem is Tailwind's `md` breakpoint — keep these in step with it.
+--------------------------------------------------------------------------- */
+@media (max-width: 47.999rem) {
+  /* Mobile card never clamped its title; the shared element must not either. */
+  .episode-row .episode-cell-main .episode-title-collapsed {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+  }
+  /* The desktop column's listen button is not part of the mobile card — the
+     mobile card carries its own, inside .episode-mobile-image. */
+  .episode-row .episode-cell-main .episode-listen-btn {
+    display: none !important;
+  }
+}
+@media (min-width: 48rem) {
+  /* …and the stacked mobile image block is not part of the desktop card. */
+  .episode-row .episode-card .episode-mobile-image {
+    display: none !important;
+  }
 }

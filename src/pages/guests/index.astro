@@ -1,0 +1,115 @@
+---
+/**
+ * `/guests` — the guest directory (plan §3.1 / T4).
+ *
+ * Zero new visual vocabulary: this is `/episodes/index.astro`'s page shape and
+ * row rhythm with a different noun in it — charcoal section, red eyebrow,
+ * `font-extrabold text-2xl` headings, the `1fr 180px 1fr` row at `md`, square
+ * bordered thumbnails, `border-white/10` dividers.
+ *
+ * GROUPED BY CITY, not by season. A season is a fact about the show; a city is
+ * a fact about the guest, and it is the axis the questions come in on ("artisan
+ * podcasts San Francisco", "blacksmiths in Brooklyn"). Groups run largest
+ * first, so the season city leads.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+import { EPISODES_PATH } from "../../lib/episodes";
+import {
+  getGuests,
+  guestsIndexJsonLd,
+  guestPath,
+  guestLead,
+  appearanceCount,
+  byName,
+  type Guest,
+} from "../../lib/guests";
+
+const guests = await getGuests();
+
+/** Largest city first, alphabetical inside it. */
+const byCity: { city: string; guests: Guest[] }[] = [
+  ...new Set(guests.map((g) => g.city)),
+]
+  .map((city) => ({ city, guests: guests.filter((g) => g.city === city).sort(byName) }))
+  .sort((a, b) => b.guests.length - a.guests.length || a.city.localeCompare(b.city));
+
+const title = "Guests — The Trades Show";
+const description =
+  "Every artisan who has appeared on The Trades Show: blacksmiths, chefs, florists, weavers, leatherworkers, ceramicists, plasterers and more — who they are, where they work, and the episodes they are in.";
+
+const creamBtn =
+  "inline-flex items-center gap-2 bg-black text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full hover:bg-black/80 transition-colors";
+---
+
+<BaseLayout title={title} description={description} jsonLd={guestsIndexJsonLd(guests)}>
+  <Navbar />
+  <main>
+    <section class="bg-charcoal pt-28 md:pt-32 pb-20 md:pb-28">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="mb-12 max-w-3xl">
+          <p class="text-red font-bold text-sm uppercase tracking-widest mb-3">The Guests</p>
+          <h1 class="font-extrabold text-2xl md:text-3xl text-white mb-4 leading-tight">
+            Artisans on The Trades Show
+          </h1>
+          <p class="text-text-light text-base md:text-lg leading-relaxed">
+            The makers who have sat down with the show, in their own workshops — what they
+            make, where they make it, and the episodes they are in.
+          </p>
+        </div>
+
+        {byCity.map(({ city, guests: cityGuests }) => (
+          <div class="mb-16 last:mb-0 fade-in">
+            <div class="flex items-baseline gap-3 mb-2">
+              <h2 class="font-extrabold text-2xl text-white">{city}</h2>
+            </div>
+            <p class="text-white/60 text-sm mb-6">
+              {cityGuests.length} {cityGuests.length === 1 ? "artisan" : "artisans"}
+            </p>
+            <hr class="border-white/10" />
+
+            {cityGuests.map((guest) => (
+              <a href={guestPath(guest.slug)} class="block group">
+                <div class="py-6 md:grid md:grid-cols-[1fr_180px_1fr] md:gap-8 md:items-center">
+                  <div class="flex flex-col gap-1 md:py-2 order-1">
+                    <span class="text-white/60 font-bold text-xs uppercase tracking-widest">
+                      {guest.trade}
+                    </span>
+                    <h3 class="font-normal text-white text-base md:text-lg mt-1 group-hover:text-text-light transition-colors">
+                      {guest.name}
+                    </h3>
+                    <span class="text-white/40 text-xs mt-2">
+                      {guest.studio ? `${guest.studio} · ` : ""}{appearanceCount(guest)}
+                    </span>
+                  </div>
+                  <div class="mt-4 md:mt-0 order-2">
+                    <img
+                      src={guest.thumbnail}
+                      alt={`${guest.name} on The Trades Show`}
+                      class="w-full aspect-square object-cover object-top border border-white rounded-lg"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="mt-4 md:mt-0 order-3">
+                    <p class="text-text-light text-sm leading-relaxed">{guestLead(guest)}</p>
+                  </div>
+                </div>
+                <hr class="border-white/10" />
+              </a>
+            ))}
+          </div>
+        ))}
+
+        {guests.length === 0 && (
+          <p class="text-text-light py-8">Guest pages are on their way.</p>
+        )}
+
+        <div class="mt-12">
+          <a href={EPISODES_PATH} class={creamBtn}>All episodes</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>
