@@ -17,6 +17,9 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+# .env.local was NOT covered here — it holds the Loops API key locally.
+.env.local
+.env*.local
 
 # macOS-specific files
 .DS_Store

@@ -22,6 +22,14 @@ const isSection = variant === "section";
         <div>
           <form class="newsletter-form flex flex-col sm:flex-row gap-3" data-form-id="section">
             <input
+              type="text"
+              name="company_website"
+              tabindex="-1"
+              autocomplete="off"
+              aria-hidden="true"
+              class="absolute left-[-9999px] w-px h-px opacity-0"
+            />
+            <input
               type="email"
               name="email"
               placeholder="Email Address"
@@ -41,21 +49,32 @@ const isSection = variant === "section";
     </div>
   </section>
 ) : (
-  <form class="newsletter-form flex flex-col sm:flex-row gap-3" data-form-id="footer">
-    <input
-      type="email"
-      name="email"
-      placeholder="Email Address"
-      required
-      class="flex-1 px-5 py-3 rounded-full bg-white text-black text-sm placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red"
-    />
-    <button
-      type="submit"
-      class="bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-full hover:bg-gray-100 transition-colors"
-    >
-      Submit
-    </button>
-  </form>
+  <div>
+    <form class="newsletter-form flex flex-col sm:flex-row gap-3" data-form-id="footer">
+      <input
+        type="text"
+        name="company_website"
+        tabindex="-1"
+        autocomplete="off"
+        aria-hidden="true"
+        class="absolute left-[-9999px] w-px h-px opacity-0"
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="Email Address"
+        required
+        class="flex-1 px-5 py-3 rounded-full bg-white text-black text-sm placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red"
+      />
+      <button
+        type="submit"
+        class="bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-full hover:bg-gray-100 transition-colors"
+      >
+        Submit
+      </button>
+    </form>
+    <p class="newsletter-message mt-3 text-sm hidden"></p>
+  </div>
 )}
 
 <script>
@@ -63,8 +82,15 @@ const isSection = variant === "section";
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const formEl = e.target as HTMLFormElement;
-      const email = new FormData(formEl).get("email") as string;
-      const msgEl = formEl.nextElementSibling as HTMLElement | null;
+      const data = new FormData(formEl);
+      const email = data.get("email") as string;
+      const companyWebsite = (data.get("company_website") as string) ?? "";
+      // Each placement reports its own source so Loops segments can be built
+      // per capture point ("tts-homepage" vs "tts-footer") with no tag mapping.
+      const formId = formEl.dataset.formId ?? "unknown";
+      const msgEl = formEl.parentElement?.querySelector(
+        ".newsletter-message",
+      ) as HTMLElement | null;
       const btn = formEl.querySelector("button") as HTMLButtonElement;
 
       btn.textContent = "...";
@@ -74,7 +100,7 @@ const isSection = variant === "section";
         const res = await fetch("/api/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, company_website: companyWebsite, form: formId }),
         });
 
         if (res.ok) {
