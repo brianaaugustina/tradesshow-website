@@ -34,6 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
     const FORM_SOURCES: Record<string, string> = {
       section: "tts-homepage",
       footer: "tts-footer",
+      instagram: "tts-instagram",
     };
     const source = FORM_SOURCES[String(body?.form ?? "")] ?? "tts-site";
 
