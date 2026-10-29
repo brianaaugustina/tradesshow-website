@@ -1,0 +1,63 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Get on the list — The Trades Show"
+  description="Candid notes from Briana about The Trades Show and the process of bringing it to life. Join the email list for free."
+>
+  <main class="min-h-svh flex items-center justify-center px-6 py-12">
+    <div class="w-full max-w-md">
+      <a href="/" aria-label="The Trades Show homepage" class="inline-block mb-12">
+        <img src="/images/wordmark-black.svg" alt="The Trades Show" width="230" height="60" class="w-52 h-auto" />
+      </a>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5">Get on the list.</h1>
+      <p class="text-base leading-relaxed mb-8">
+        I would love to have you on my email list, where I share more candidly about the show and the process of bringing it to life. You can join for free below!
+      </p>
+      <form id="join-form" class="flex flex-col gap-3">
+        <input type="text" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute left-[-9999px] w-px h-px opacity-0" />
+        <label for="email" class="text-sm font-bold">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required class="w-full min-h-12 px-4 py-3 rounded-lg border border-black/25 bg-white text-base focus:outline-none focus:ring-2 focus:ring-red" />
+        <button type="submit" class="w-full min-h-12 px-5 py-3 mt-1 rounded-lg bg-charcoal text-white font-bold text-base cursor-pointer hover:bg-black focus:outline-none focus:ring-2 focus:ring-red focus:ring-offset-2 disabled:opacity-60 disabled:cursor-wait">Get on the list</button>
+        <p class="text-xs text-black/65 mt-1">Free to join. Unsubscribe any time.</p>
+      </form>
+      <p id="join-status" role="status" aria-live="polite" class="mt-5 text-base leading-relaxed" hidden></p>
+    </div>
+  </main>
+  <script>
+    const form = document.querySelector<HTMLFormElement>("#join-form")!;
+    const status = document.querySelector<HTMLParagraphElement>("#join-status")!;
+    const button = form.querySelector<HTMLButtonElement>("button")!;
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      button.disabled = true;
+      button.textContent = "Joining…";
+      status.hidden = true;
+
+      try {
+        const response = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: data.get("email"),
+            company_website: data.get("company_website"),
+            form: "instagram",
+          }),
+        });
+        if (!response.ok) throw new Error("Signup failed");
+        form.hidden = true;
+        form.classList.add("hidden");
+        status.textContent = "You’re on the list! Thank you so much for being here.";
+      } catch {
+        status.textContent = "Something went wrong. Please try again.";
+      } finally {
+        status.hidden = false;
+        button.disabled = false;
+        button.textContent = "Get on the list";
+      }
+    });
+  </script>
+</BaseLayout>
