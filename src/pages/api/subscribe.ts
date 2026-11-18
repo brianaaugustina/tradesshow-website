@@ -49,7 +49,6 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ error: "Subscription failed" }, 500);
     }
 
-    const listId = process.env.LOOPS_LIST_ID || import.meta.env.LOOPS_LIST_ID;
     const res = await fetch("https://app.loops.so/api/v1/contacts/update", {
       method: "PUT",
       headers: {
@@ -60,7 +59,13 @@ export const POST: APIRoute = async ({ request }) => {
         email,
         source,
         subscribed: true,
-        ...(listId ? { mailingLists: { [listId]: true } } : {}),
+        mailingLists: {
+          cmt10f3th7vnr0j08agzc8b0s: true, // New episode announcements
+          cmt10giar0nlj0j1s93n21n1f: true, // Monthly updates
+          cmt10hk4n2uzj0i0e8754b1jy: true, // Seasonal stakeholder messages
+        },
+        // Omit the opportunity digest: signup must not add it or remove an
+        // existing preference someone chose separately through The Corral.
       }),
     });
 
